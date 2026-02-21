@@ -25,5 +25,14 @@
     "author": "Family",
     "color": "#3B82F6",
     "description": "מצאו את כל הזוגות!"
+  },
+  {
+    "id": "snakes-and-ladders",
+    "name": "Snakes & Ladders",
+    "nameHe": "סולמות ונחשים",
+    "emoji": "🐍",
+    "author": "Family",
+    "color": "#EF4444",
+    "description": "הטילו קובייה וטפסו ל-100!"
   }
 ]

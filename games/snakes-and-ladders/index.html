@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>סולמות ונחשים 🎲</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --border: rgba(255,255,255,0.08);
+  --text: #f1f5f9;
+  --dim: rgba(255,255,255,0.5);
+  --p1: #f472b6;
+  --p2: #60a5fa;
+  --ladder: #22c55e;
+  --snake: #ef4444;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family:'Rubik',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex; flex-direction:column;
+}
+.back-btn {
+  position:fixed; top:10px; left:10px; z-index:9999;
+  background:rgba(0,0,0,0.5); color:#fff; text-decoration:none;
+  padding:6px 14px; border-radius:12px; font-size:0.85em;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+.top-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px; background:var(--surface);
+  border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.top-bar h1 {
+  font-size:1.05em; font-weight:800;
+  background:linear-gradient(135deg,#f472b6,#60a5fa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.players-bar { display:flex; gap:14px; font-size:0.85em; font-weight:700; }
+.players-bar .p { display:flex; align-items:center; gap:4px; padding:4px 10px; border-radius:10px; }
+.players-bar .p.active { outline:2px solid #fff; outline-offset:2px; }
+.p1-bg { background:rgba(244,114,182,0.2); color:var(--p1); }
+.p2-bg { background:rgba(96,165,250,0.2); color:var(--p2); }
+
+.game-area {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  padding:8px; overflow:hidden; position:relative;
+}
+canvas { border-radius:12px; }
+
+.bottom-bar {
+  display:flex; align-items:center; justify-content:center;
+  gap:12px; padding:12px 16px;
+  background:var(--surface); border-top:1px solid var(--border); flex-shrink:0;
+}
+.btn {
+  padding:12px 28px; border-radius:14px; border:none;
+  font-family:'Rubik',sans-serif; font-size:1em; font-weight:800;
+  cursor:pointer; color:#fff; transition:all 0.2s;
+}
+.btn:hover { filter:brightness(1.15); transform:translateY(-1px); }
+.btn:active { transform:translateY(0); }
+.btn-roll { background:linear-gradient(135deg,#f59e0b,#ef4444); font-size:1.1em; }
+.btn-roll:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+.btn-new { background:rgba(255,255,255,0.1); font-size:0.85em; }
+
+.dice-display {
+  font-size:2.2em; min-width:56px; text-align:center;
+  transition:transform 0.3s;
+}
+.dice-display.rolling { animation:shake 0.12s infinite; }
+@keyframes shake {
+  0%,100%{transform:rotate(0)} 25%{transform:rotate(-15deg)} 75%{transform:rotate(15deg)}
+}
+
+.msg {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:rgba(0,0,0,0.85); backdrop-filter:blur(12px);
+  padding:28px 40px; border-radius:20px; text-align:center;
+  z-index:50; pointer-events:auto; display:none;
+  border:1px solid var(--border);
+}
+.msg h2 { font-size:1.6em; margin-bottom:8px; }
+.msg p { color:var(--dim); margin-bottom:16px; }
+.msg .btn { pointer-events:auto; }
+</style>
+</head>
+<body>
+
+<a href="../../" class="back-btn">🏠 משחקים</a>
+
+<div class="top-bar">
+  <h1>🐍 סולמות ונחשים 🪜</h1>
+  <div class="players-bar">
+    <div class="p p1-bg" id="p1tag">🩷 שחקן 1</div>
+    <div class="p p2-bg" id="p2tag">💙 שחקן 2</div>
+  </div>
+</div>
+
+<div class="game-area">
+  <canvas id="board"></canvas>
+  <div class="msg" id="winMsg">
+    <h2 id="winTitle">🎉 ניצחון!</h2>
+    <p id="winText">שחקן 1 ניצח!</p>
+    <button class="btn btn-roll" onclick="resetGame()">🔄 משחק חדש</button>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <button class="btn btn-new" onclick="resetGame()">🔄 חדש</button>
+  <div class="dice-display" id="dice">🎲</div>
+  <button class="btn btn-roll" id="rollBtn" onclick="rollDice()">🎲 הטל קובייה</button>
+</div>
+
+<script>
+const BOARD_SIZE = 10;
+const TOTAL = BOARD_SIZE * BOARD_SIZE;
+const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+const SNAKES = {16:6, 47:26, 49:11, 56:53, 62:19, 64:60, 87:24, 93:73, 95:75, 98:78};
+const LADDERS = {2:38, 7:14, 8:31, 15:26, 21:42, 28:84, 36:44, 51:67, 71:91, 78:98, 87:94};
+
+const CELL_COLORS = [
+  '#1e3a5f','#1a3350','#1e2d44','#1a2840','#162032',
+  '#1e3a5f','#1a3350','#1e2d44','#1a2840','#162032'
+];
+
+let players = [{pos:0, color:'#f472b6', name:'שחקן 1'}, {pos:0, color:'#60a5fa', name:'שחקן 2'}];
+let current = 0;
+let rolling = false;
+let gameOver = false;
+
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const area = document.querySelector('.game-area');
+  const s = Math.min(area.clientWidth - 16, area.clientHeight - 16, 560);
+  canvas.width = s;
+  canvas.height = s;
+  draw();
+}
+window.addEventListener('resize', resize);
+
+function cellToXY(cell) {
+  if (cell <= 0) return {x:-1, y:-1};
+  const idx = cell - 1;
+  const row = Math.floor(idx / BOARD_SIZE);
+  const col = idx % BOARD_SIZE;
+  const actualCol = (row % 2 === 0) ? col : (BOARD_SIZE - 1 - col);
+  const actualRow = BOARD_SIZE - 1 - row;
+  const cs = canvas.width / BOARD_SIZE;
+  return {x: actualCol * cs, y: actualRow * cs, cs};
+}
+
+function draw() {
+  const cs = canvas.width / BOARD_SIZE;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw cells
+  for (let i = 1; i <= TOTAL; i++) {
+    const {x, y} = cellToXY(i);
+    const row = Math.floor((i-1) / BOARD_SIZE);
+    const col = (i-1) % BOARD_SIZE;
+    ctx.fillStyle = (row + col) % 2 === 0 ? '#1e3a5f' : '#162032';
+    ctx.fillRect(x, y, cs, cs);
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.strokeRect(x, y, cs, cs);
+
+    // Cell number
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = `${cs * 0.22}px Rubik`;
+    ctx.textAlign = 'center';
+    ctx.fillText(i, x + cs/2, y + cs * 0.3);
+  }
+
+  // Draw ladders
+  ctx.lineWidth = cs * 0.12;
+  ctx.lineCap = 'round';
+  for (const [from, to] of Object.entries(LADDERS)) {
+    const a = cellToXY(+from);
+    const b = cellToXY(+to);
+    ctx.strokeStyle = 'rgba(34,197,94,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(a.x + cs*0.35, a.y + cs/2);
+    ctx.lineTo(b.x + cs*0.35, b.y + cs/2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(a.x + cs*0.65, a.y + cs/2);
+    ctx.lineTo(b.x + cs*0.65, b.y + cs/2);
+    ctx.stroke();
+    // Rungs
+    ctx.lineWidth = cs * 0.04;
+    ctx.strokeStyle = 'rgba(34,197,94,0.25)';
+    const steps = 3;
+    for (let s = 1; s <= steps; s++) {
+      const t = s / (steps + 1);
+      const rx = a.x + (b.x - a.x) * t;
+      const ry = a.y + (b.y - a.y) * t;
+      ctx.beginPath();
+      ctx.moveTo(rx + cs*0.35, ry + cs/2);
+      ctx.lineTo(rx + cs*0.65, ry + cs/2);
+      ctx.stroke();
+    }
+    ctx.lineWidth = cs * 0.12;
+    // Emoji
+    ctx.font = `${cs*0.35}px serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('🪜', a.x + cs/2, a.y + cs*0.75);
+  }
+
+  // Draw snakes
+  for (const [from, to] of Object.entries(SNAKES)) {
+    const a = cellToXY(+from);
+    const b = cellToXY(+to);
+    ctx.strokeStyle = 'rgba(239,68,68,0.3)';
+    ctx.lineWidth = cs * 0.1;
+    ctx.beginPath();
+    const mx = (a.x + b.x) / 2 + cs * 0.4;
+    const my = (a.y + b.y) / 2;
+    ctx.moveTo(a.x + cs/2, a.y + cs/2);
+    ctx.quadraticCurveTo(mx, my, b.x + cs/2, b.y + cs/2);
+    ctx.stroke();
+    ctx.font = `${cs*0.35}px serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('🐍', a.x + cs/2, a.y + cs*0.75);
+  }
+
+  // Draw players
+  players.forEach((p, i) => {
+    if (p.pos <= 0) return;
+    const {x, y} = cellToXY(p.pos);
+    const offset = i === 0 ? cs*0.3 : cs*0.7;
+    ctx.beginPath();
+    ctx.arc(x + offset, y + cs*0.6, cs*0.18, 0, Math.PI*2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${cs*0.18}px Rubik`;
+    ctx.textAlign = 'center';
+    ctx.fillText(i+1, x + offset, y + cs*0.65);
+  });
+}
+
+function updateTags() {
+  document.getElementById('p1tag').classList.toggle('active', current === 0);
+  document.getElementById('p2tag').classList.toggle('active', current === 1);
+}
+
+async function animateMove(player, from, to) {
+  const step = from < to ? 1 : -1;
+  let pos = from;
+  while (pos !== to) {
+    pos += step;
+    players[player].pos = pos;
+    draw();
+    await new Promise(r => setTimeout(r, 120));
+  }
+}
+
+async function rollDice() {
+  if (rolling || gameOver) return;
+  rolling = true;
+  const btn = document.getElementById('rollBtn');
+  const diceEl = document.getElementById('dice');
+  btn.disabled = true;
+
+  // Animate dice
+  diceEl.classList.add('rolling');
+  let val = 0;
+  for (let i = 0; i < 10; i++) {
+    val = Math.floor(Math.random() * 6) + 1;
+    diceEl.textContent = DICE_FACES[val - 1];
+    await new Promise(r => setTimeout(r, 80));
+  }
+  diceEl.classList.remove('rolling');
+
+  const p = players[current];
+  let newPos = p.pos + val;
+
+  if (newPos > TOTAL) {
+    // Can't move past 100
+    current = 1 - current;
+    updateTags();
+    rolling = false;
+    btn.disabled = false;
+    return;
+  }
+
+  // Move step by step
+  await animateMove(current, p.pos, newPos);
+
+  // Check win
+  if (newPos === TOTAL) {
+    gameOver = true;
+    document.getElementById('winTitle').textContent = current === 0 ? '🩷 שחקן 1 ניצח! 🎉' : '💙 שחקן 2 ניצח! 🎉';
+    document.getElementById('winText').textContent = `ב-${DICE_FACES[val-1]} הגיע ל-100!`;
+    document.getElementById('winMsg').style.display = 'block';
+    rolling = false;
+    return;
+  }
+
+  // Check snake or ladder
+  if (LADDERS[newPos]) {
+    await new Promise(r => setTimeout(r, 300));
+    await animateMove(current, newPos, LADDERS[newPos]);
+    newPos = LADDERS[newPos];
+  } else if (SNAKES[newPos]) {
+    await new Promise(r => setTimeout(r, 300));
+    await animateMove(current, newPos, SNAKES[newPos]);
+    newPos = SNAKES[newPos];
+  }
+
+  players[current].pos = newPos;
+
+  // Next player
+  current = 1 - current;
+  updateTags();
+  rolling = false;
+  btn.disabled = false;
+}
+
+function resetGame() {
+  players.forEach(p => p.pos = 0);
+  current = 0;
+  rolling = false;
+  gameOver = false;
+  document.getElementById('winMsg').style.display = 'none';
+  document.getElementById('dice').textContent = '🎲';
+  document.getElementById('rollBtn').disabled = false;
+  updateTags();
+  draw();
+}
+
+updateTags();
+resize();
+</script>
+</body>
+</html>

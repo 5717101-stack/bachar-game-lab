@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>משחק זיכרון - חיות 🐾</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c1222;
+  --surface: #162032;
+  --card-bg: #1e2d44;
+  --card-flip: #2563eb;
+  --text: #f0eef6;
+  --dim: rgba(255,255,255,0.5);
+  --success: #22c55e;
+  --gold: #eab308;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Rubik', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
+
+.back-btn {
+  position: fixed; top: 12px; left: 12px; z-index: 9999;
+  background: rgba(0,0,0,0.5); color: #fff; text-decoration: none;
+  padding: 6px 14px; border-radius: 12px; font-family: sans-serif;
+  font-size: 0.85em; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; background: var(--surface);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0; z-index: 5;
+}
+.top-bar h1 {
+  font-size: 1.1em; font-weight: 800;
+  background: linear-gradient(135deg, #3b82f6, #22c55e);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stats { display: flex; gap: 16px; font-size: 0.9em; font-weight: 600; }
+.stats span { display: flex; align-items: center; gap: 4px; }
+
+.board-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 16px; overflow: hidden;
+}
+.board {
+  display: grid;
+  gap: 10px;
+  width: 100%; max-width: 500px;
+  aspect-ratio: 1;
+}
+.board.s4 { grid-template-columns: repeat(4, 1fr); }
+.board.s6 { grid-template-columns: repeat(4, 1fr); }
+
+.card {
+  position: relative; border-radius: 14px;
+  cursor: pointer; perspective: 600px;
+  aspect-ratio: 1;
+}
+.card-inner {
+  position: relative; width: 100%; height: 100%;
+  transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+  transform-style: preserve-3d;
+}
+.card.flipped .card-inner { transform: rotateY(180deg); }
+.card.matched .card-inner { transform: rotateY(180deg); }
+
+.card-face {
+  position: absolute; inset: 0; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+}
+.card-front {
+  background: var(--card-bg);
+  border: 2px solid rgba(255,255,255,0.08);
+  font-size: 2em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card:hover .card-front {
+  border-color: rgba(37,99,235,0.4);
+  box-shadow: 0 0 20px rgba(37,99,235,0.15);
+}
+.card-back {
+  background: var(--surface);
+  border: 2px solid rgba(255,255,255,0.1);
+  transform: rotateY(180deg);
+  font-size: 2.5em;
+}
+.card.matched .card-back {
+  border-color: var(--success);
+  box-shadow: 0 0 20px rgba(34,197,94,0.2);
+}
+
+.bottom-bar {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; padding: 12px 18px;
+  background: var(--surface);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.btn {
+  padding: 10px 20px; border-radius: 12px; border: none;
+  font-family: 'Rubik', sans-serif; font-size: 0.9em; font-weight: 700;
+  cursor: pointer; color: #fff; transition: all 0.2s;
+}
+.btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-new { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.btn-level { background: rgba(255,255,255,0.1); }
+.btn-level.active { background: linear-gradient(135deg, #22c55e, #16a34a); }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.overlay.show { opacity: 1; pointer-events: auto; }
+.overlay-box {
+  background: var(--surface); border-radius: 24px;
+  padding: 36px; text-align: center; max-width: 340px;
+  border: 1px solid rgba(255,255,255,0.08);
+  transform: scale(0.9); transition: transform 0.3s;
+}
+.overlay.show .overlay-box { transform: scale(1); }
+.overlay-box .big-emoji { font-size: 3em; margin-bottom: 12px; }
+.overlay-box h2 { font-size: 1.4em; margin-bottom: 8px; }
+.overlay-box p { color: var(--dim); margin-bottom: 20px; font-size: 0.95em; }
+
+@keyframes pop { 0%{transform:scale(0.8) rotateY(180deg)} 50%{transform:scale(1.1) rotateY(180deg)} 100%{transform:scale(1) rotateY(180deg)} }
+.card.matched .card-inner { animation: pop 0.4s ease; }
+
+@media (max-width: 500px) {
+  .board { max-width: 360px; gap: 8px; }
+  .card-front { font-size: 1.5em; }
+  .card-back { font-size: 2em; }
+}
+@media (max-height: 600px) {
+  .board { max-width: 320px; }
+}
+</style>
+</head>
+<body>
+
+<a href="../../" class="back-btn">🏠 משחקים</a>
+
+<div class="top-bar">
+  <h1>🐾 זיכרון חיות</h1>
+  <div class="stats">
+    <span>🔄 <span id="moves">0</span></span>
+    <span>🏆 <span id="pairs">0</span>/<span id="total">0</span></span>
+    <span>⏱️ <span id="timer">0:00</span></span>
+  </div>
+</div>
+
+<div class="board-wrap">
+  <div class="board s4" id="board"></div>
+</div>
+
+<div class="bottom-bar">
+  <button class="btn btn-level active" data-level="easy" onclick="setLevel('easy')">קל (8)</button>
+  <button class="btn btn-level" data-level="medium" onclick="setLevel('medium')">בינוני (12)</button>
+  <button class="btn btn-level" data-level="hard" onclick="setLevel('hard')">קשה (16)</button>
+  <button class="btn btn-new" onclick="newGame()">🔄 משחק חדש</button>
+</div>
+
+<div class="overlay" id="winOverlay">
+  <div class="overlay-box">
+    <div class="big-emoji">🎉</div>
+    <h2>כל הכבוד!</h2>
+    <p id="winMsg">מצאת את כל הזוגות!</p>
+    <button class="btn btn-new" onclick="closeWin(); newGame()">🔄 שחק שוב</button>
+  </div>
+</div>
+
+<script>
+const ANIMALS = [
+  '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼',
+  '🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔',
+  '🐧','🐦','🦄','🐴','🦋','🐢','🐙','🦀',
+  '🐬','🐳','🦈','🐘','🦒','🦘','🐊','🦜'
+];
+
+let level = 'easy';
+const LEVEL_PAIRS = { easy: 4, medium: 6, hard: 8 };
+let cards = [];
+let flipped = [];
+let matched = new Set();
+let moves = 0;
+let timerInterval = null;
+let startTime = null;
+let locked = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function setLevel(l) {
+  level = l;
+  document.querySelectorAll('.btn-level').forEach(b => {
+    b.classList.toggle('active', b.dataset.level === l);
+  });
+  newGame();
+}
+
+function newGame() {
+  const numPairs = LEVEL_PAIRS[level];
+  const picked = shuffle(ANIMALS).slice(0, numPairs);
+  cards = shuffle([...picked, ...picked]);
+  flipped = [];
+  matched = new Set();
+  moves = 0;
+  locked = false;
+  clearInterval(timerInterval);
+  startTime = null;
+
+  document.getElementById('moves').textContent = '0';
+  document.getElementById('pairs').textContent = '0';
+  document.getElementById('total').textContent = numPairs;
+  document.getElementById('timer').textContent = '0:00';
+
+  const board = document.getElementById('board');
+  const cols = numPairs <= 4 ? 4 : 4;
+  board.className = 'board s' + cols;
+  board.innerHTML = cards.map((animal, i) => `
+    <div class="card" data-idx="${i}" onclick="flipCard(this)">
+      <div class="card-inner">
+        <div class="card-face card-front">❓</div>
+        <div class="card-face card-back">${animal}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function flipCard(el) {
+  if (locked) return;
+  const idx = parseInt(el.dataset.idx);
+  if (matched.has(idx) || flipped.includes(idx)) return;
+  if (flipped.length >= 2) return;
+
+  if (!startTime) {
+    startTime = Date.now();
+    timerInterval = setInterval(updateTimer, 500);
+  }
+
+  el.classList.add('flipped');
+  flipped.push(idx);
+
+  if (flipped.length === 2) {
+    moves++;
+    document.getElementById('moves').textContent = moves;
+    const [a, b] = flipped;
+
+    if (cards[a] === cards[b]) {
+      matched.add(a);
+      matched.add(b);
+      const cardEls = document.querySelectorAll('.card');
+      cardEls[a].classList.add('matched');
+      cardEls[b].classList.add('matched');
+      flipped = [];
+      document.getElementById('pairs').textContent = matched.size / 2;
+
+      if (matched.size === cards.length) {
+        clearInterval(timerInterval);
+        setTimeout(showWin, 600);
+      }
+    } else {
+      locked = true;
+      setTimeout(() => {
+        const cardEls = document.querySelectorAll('.card');
+        cardEls[a].classList.remove('flipped');
+        cardEls[b].classList.remove('flipped');
+        flipped = [];
+        locked = false;
+      }, 800);
+    }
+  }
+}
+
+function updateTimer() {
+  if (!startTime) return;
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(elapsed / 60);
+  const s = (elapsed % 60).toString().padStart(2, '0');
+  document.getElementById('timer').textContent = m + ':' + s;
+}
+
+function showWin() {
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(elapsed / 60);
+  const s = (elapsed % 60).toString().padStart(2, '0');
+  const stars = moves <= LEVEL_PAIRS[level] + 2 ? '⭐⭐⭐' : moves <= LEVEL_PAIRS[level] * 2 ? '⭐⭐' : '⭐';
+  document.getElementById('winMsg').innerHTML =
+    stars + '<br>' +
+    'סיימת ב-' + moves + ' מהלכים, ' + m + ':' + s + ' דקות';
+  document.getElementById('winOverlay').classList.add('show');
+}
+
+function closeWin() {
+  document.getElementById('winOverlay').classList.remove('show');
+}
+
+newGame();
+</script>
+</body>
+</html>

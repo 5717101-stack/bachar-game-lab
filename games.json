@@ -16,5 +16,14 @@
     "author": "Adam",
     "color": "#A78BFA",
     "description": "עצב את הדמות שלך!"
+  },
+  {
+    "id": "memory-animals",
+    "name": "Memory Animals",
+    "nameHe": "זיכרון חיות",
+    "emoji": "🐾",
+    "author": "Family",
+    "color": "#3B82F6",
+    "description": "מצאו את כל הזוגות!"
   }
 ]

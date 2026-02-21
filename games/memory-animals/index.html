@@ -16,6 +16,10 @@
   --dim: rgba(255,255,255,0.5);
   --success: #22c55e;
   --gold: #eab308;
+  --p1: #3b82f6;
+  --p2: #22c55e;
+  --p3: #f59e0b;
+  --p4: #a855f7;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; overflow: hidden; }
@@ -49,6 +53,47 @@ body {
 .stats { display: flex; gap: 16px; font-size: 0.9em; font-weight: 600; }
 .stats span { display: flex; align-items: center; gap: 4px; }
 
+.player-bar {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid transparent;
+  font-size: 0.85em;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+.player-card.active {
+  border-color: var(--pcolor);
+  background: rgba(255,255,255,0.1);
+  box-shadow: 0 0 15px rgba(255,255,255,0.08);
+  transform: scale(1.08);
+}
+.player-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pcolor);
+}
+.player-score {
+  background: rgba(255,255,255,0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
 .board-wrap {
   flex: 1; display: flex; align-items: center; justify-content: center;
   padding: 16px; overflow: hidden;
@@ -57,10 +102,11 @@ body {
   display: grid;
   gap: 10px;
   width: 100%; max-width: 500px;
-  aspect-ratio: 1;
 }
 .board.s4 { grid-template-columns: repeat(4, 1fr); }
-.board.s6 { grid-template-columns: repeat(4, 1fr); }
+.board.s6 { grid-template-columns: repeat(6, 1fr); max-width: 650px; }
+.board.s6 .card-front { font-size: 1.5em; }
+.board.s6 .card-back { font-size: 1.8em; }
 
 .card {
   position: relative; border-radius: 14px;
@@ -103,14 +149,15 @@ body {
 
 .bottom-bar {
   display: flex; align-items: center; justify-content: center;
-  gap: 12px; padding: 12px 18px;
+  gap: 8px; padding: 10px 18px;
   background: var(--surface);
   border-top: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 .btn {
-  padding: 10px 20px; border-radius: 12px; border: none;
-  font-family: 'Rubik', sans-serif; font-size: 0.9em; font-weight: 700;
+  padding: 10px 16px; border-radius: 12px; border: none;
+  font-family: 'Rubik', sans-serif; font-size: 0.85em; font-weight: 700;
   cursor: pointer; color: #fff; transition: all 0.2s;
 }
 .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
@@ -118,6 +165,7 @@ body {
 .btn-new { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 .btn-level { background: rgba(255,255,255,0.1); }
 .btn-level.active { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.btn-players { background: linear-gradient(135deg, #a855f7, #7c3aed); }
 
 .overlay {
   position: fixed; inset: 0; z-index: 100;
@@ -129,7 +177,7 @@ body {
 .overlay.show { opacity: 1; pointer-events: auto; }
 .overlay-box {
   background: var(--surface); border-radius: 24px;
-  padding: 36px; text-align: center; max-width: 340px;
+  padding: 36px; text-align: center; max-width: 360px; width: 90%;
   border: 1px solid rgba(255,255,255,0.08);
   transform: scale(0.9); transition: transform 0.3s;
 }
@@ -138,16 +186,67 @@ body {
 .overlay-box h2 { font-size: 1.4em; margin-bottom: 8px; }
 .overlay-box p { color: var(--dim); margin-bottom: 20px; font-size: 0.95em; }
 
+.player-select {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.btn-ps {
+  padding: 14px 10px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  font-family: 'Rubik', sans-serif;
+  font-size: 1em;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-ps:hover {
+  border-color: var(--pcolor);
+  background: rgba(255,255,255,0.1);
+  transform: scale(1.05);
+}
+.btn-ps .ps-emoji { font-size: 1.5em; display: block; margin-bottom: 4px; }
+
+.win-scores {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+.win-score-item {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid transparent;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.win-score-item.winner {
+  border-color: var(--gold);
+  background: rgba(234,179,8,0.1);
+}
+
 @keyframes pop { 0%{transform:scale(0.8) rotateY(180deg)} 50%{transform:scale(1.1) rotateY(180deg)} 100%{transform:scale(1) rotateY(180deg)} }
 .card.matched .card-inner { animation: pop 0.4s ease; }
 
 @media (max-width: 500px) {
   .board { max-width: 360px; gap: 8px; }
+  .board.s6 { max-width: 98%; gap: 6px; }
+  .board.s6 .card-front { font-size: 1.2em; }
+  .board.s6 .card-back { font-size: 1.3em; }
   .card-front { font-size: 1.5em; }
   .card-back { font-size: 2em; }
+  .bottom-bar { gap: 6px; padding: 8px 12px; }
+  .btn { padding: 8px 12px; font-size: 0.78em; }
 }
 @media (max-height: 600px) {
   .board { max-width: 320px; }
+  .board.s6 { max-width: 500px; }
 }
 </style>
 </head>
@@ -164,6 +263,8 @@ body {
   </div>
 </div>
 
+<div class="player-bar" id="playerBar"></div>
+
 <div class="board-wrap">
   <div class="board s4" id="board"></div>
 </div>
@@ -172,13 +273,38 @@ body {
   <button class="btn btn-level active" data-level="easy" onclick="setLevel('easy')">קל (8)</button>
   <button class="btn btn-level" data-level="medium" onclick="setLevel('medium')">בינוני (12)</button>
   <button class="btn btn-level" data-level="hard" onclick="setLevel('hard')">קשה (16)</button>
-  <button class="btn btn-new" onclick="newGame()">🔄 משחק חדש</button>
+  <button class="btn btn-level" data-level="expert" onclick="setLevel('expert')">מומחה (24)</button>
+  <button class="btn btn-new" onclick="newGame()">🔄 חדש</button>
+  <button class="btn btn-players" onclick="showSetup()">👥 שחקנים</button>
+</div>
+
+<div class="overlay show" id="setupOverlay">
+  <div class="overlay-box">
+    <div class="big-emoji">🎮</div>
+    <h2>כמה שחקנים?</h2>
+    <p>בחרו מספר שחקנים למשחק</p>
+    <div class="player-select">
+      <button class="btn-ps" style="--pcolor: var(--p1)" onclick="startWithPlayers(1)">
+        <span class="ps-emoji">🙋</span>שחקן אחד
+      </button>
+      <button class="btn-ps" style="--pcolor: var(--p2)" onclick="startWithPlayers(2)">
+        <span class="ps-emoji">👫</span>2 שחקנים
+      </button>
+      <button class="btn-ps" style="--pcolor: var(--p3)" onclick="startWithPlayers(3)">
+        <span class="ps-emoji">👨‍👩‍👦</span>3 שחקנים
+      </button>
+      <button class="btn-ps" style="--pcolor: var(--p4)" onclick="startWithPlayers(4)">
+        <span class="ps-emoji">👨‍👩‍👧‍👦</span>4 שחקנים
+      </button>
+    </div>
+  </div>
 </div>
 
 <div class="overlay" id="winOverlay">
   <div class="overlay-box">
     <div class="big-emoji">🎉</div>
-    <h2>כל הכבוד!</h2>
+    <h2 id="winTitle">כל הכבוד!</h2>
+    <div id="winScores"></div>
     <p id="winMsg">מצאת את כל הזוגות!</p>
     <button class="btn btn-new" onclick="closeWin(); newGame()">🔄 שחק שוב</button>
   </div>
@@ -192,8 +318,14 @@ const ANIMALS = [
   '🐬','🐳','🦈','🐘','🦒','🦘','🐊','🦜'
 ];
 
+const LEVEL_PAIRS = { easy: 4, medium: 6, hard: 8, expert: 12 };
+const PLAYER_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7'];
+const PLAYER_NAMES = ['שחקן 1', 'שחקן 2', 'שחקן 3', 'שחקן 4'];
+
 let level = 'easy';
-const LEVEL_PAIRS = { easy: 4, medium: 6, hard: 8 };
+let numPlayers = 1;
+let currentPlayer = 0;
+let playerScores = [0];
 let cards = [];
 let flipped = [];
 let matched = new Set();
@@ -211,21 +343,52 @@ function shuffle(arr) {
   return a;
 }
 
+function showSetup() {
+  document.getElementById('setupOverlay').classList.add('show');
+}
+
+function startWithPlayers(n) {
+  numPlayers = n;
+  currentPlayer = 0;
+  playerScores = Array(n).fill(0);
+  document.getElementById('setupOverlay').classList.remove('show');
+  newGame();
+}
+
 function setLevel(l) {
   level = l;
-  document.querySelectorAll('.btn-level').forEach(b => {
+  document.querySelectorAll('.btn-level').forEach(function(b) {
     b.classList.toggle('active', b.dataset.level === l);
   });
   newGame();
 }
 
+function renderPlayerBar() {
+  var bar = document.getElementById('playerBar');
+  if (numPlayers <= 1) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+  bar.innerHTML = playerScores.map(function(score, i) {
+    return '<div class="player-card' + (i === currentPlayer ? ' active' : '') +
+      '" style="--pcolor:' + PLAYER_COLORS[i] + '">' +
+      '<span class="player-dot"></span>' +
+      '<span>' + PLAYER_NAMES[i] + '</span>' +
+      '<span class="player-score">' + score + '</span>' +
+      '</div>';
+  }).join('');
+}
+
 function newGame() {
-  const numPairs = LEVEL_PAIRS[level];
-  const picked = shuffle(ANIMALS).slice(0, numPairs);
-  cards = shuffle([...picked, ...picked]);
+  var numPairs = LEVEL_PAIRS[level];
+  var picked = shuffle(ANIMALS).slice(0, numPairs);
+  cards = shuffle([].concat(picked, picked));
   flipped = [];
   matched = new Set();
   moves = 0;
+  currentPlayer = 0;
+  playerScores = Array(numPlayers).fill(0);
   locked = false;
   clearInterval(timerInterval);
   startTime = null;
@@ -235,22 +398,23 @@ function newGame() {
   document.getElementById('total').textContent = numPairs;
   document.getElementById('timer').textContent = '0:00';
 
-  const board = document.getElementById('board');
-  const cols = numPairs <= 4 ? 4 : 4;
+  var board = document.getElementById('board');
+  var cols = numPairs <= 8 ? 4 : 6;
   board.className = 'board s' + cols;
-  board.innerHTML = cards.map((animal, i) => `
-    <div class="card" data-idx="${i}" onclick="flipCard(this)">
-      <div class="card-inner">
-        <div class="card-face card-front">❓</div>
-        <div class="card-face card-back">${animal}</div>
-      </div>
-    </div>
-  `).join('');
+  board.innerHTML = cards.map(function(animal, i) {
+    return '<div class="card" data-idx="' + i + '" onclick="flipCard(this)">' +
+      '<div class="card-inner">' +
+      '<div class="card-face card-front">❓</div>' +
+      '<div class="card-face card-back">' + animal + '</div>' +
+      '</div></div>';
+  }).join('');
+
+  renderPlayerBar();
 }
 
 function flipCard(el) {
   if (locked) return;
-  const idx = parseInt(el.dataset.idx);
+  var idx = parseInt(el.dataset.idx);
   if (matched.has(idx) || flipped.includes(idx)) return;
   if (flipped.length >= 2) return;
 
@@ -265,15 +429,21 @@ function flipCard(el) {
   if (flipped.length === 2) {
     moves++;
     document.getElementById('moves').textContent = moves;
-    const [a, b] = flipped;
+    var a = flipped[0], b = flipped[1];
 
     if (cards[a] === cards[b]) {
       matched.add(a);
       matched.add(b);
-      const cardEls = document.querySelectorAll('.card');
+      var cardEls = document.querySelectorAll('.card');
       cardEls[a].classList.add('matched');
       cardEls[b].classList.add('matched');
       flipped = [];
+
+      if (numPlayers > 1) {
+        playerScores[currentPlayer]++;
+        renderPlayerBar();
+      }
+
       document.getElementById('pairs').textContent = matched.size / 2;
 
       if (matched.size === cards.length) {
@@ -282,12 +452,17 @@ function flipCard(el) {
       }
     } else {
       locked = true;
-      setTimeout(() => {
-        const cardEls = document.querySelectorAll('.card');
+      setTimeout(function() {
+        var cardEls = document.querySelectorAll('.card');
         cardEls[a].classList.remove('flipped');
         cardEls[b].classList.remove('flipped');
         flipped = [];
         locked = false;
+
+        if (numPlayers > 1) {
+          currentPlayer = (currentPlayer + 1) % numPlayers;
+          renderPlayerBar();
+        }
       }, 800);
     }
   }
@@ -295,28 +470,53 @@ function flipCard(el) {
 
 function updateTimer() {
   if (!startTime) return;
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  const m = Math.floor(elapsed / 60);
-  const s = (elapsed % 60).toString().padStart(2, '0');
+  var elapsed = Math.floor((Date.now() - startTime) / 1000);
+  var m = Math.floor(elapsed / 60);
+  var s = (elapsed % 60).toString().padStart(2, '0');
   document.getElementById('timer').textContent = m + ':' + s;
 }
 
 function showWin() {
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  const m = Math.floor(elapsed / 60);
-  const s = (elapsed % 60).toString().padStart(2, '0');
-  const stars = moves <= LEVEL_PAIRS[level] + 2 ? '⭐⭐⭐' : moves <= LEVEL_PAIRS[level] * 2 ? '⭐⭐' : '⭐';
-  document.getElementById('winMsg').innerHTML =
-    stars + '<br>' +
-    'סיימת ב-' + moves + ' מהלכים, ' + m + ':' + s + ' דקות';
+  var elapsed = Math.floor((Date.now() - startTime) / 1000);
+  var m = Math.floor(elapsed / 60);
+  var s = (elapsed % 60).toString().padStart(2, '0');
+  var scoresDiv = document.getElementById('winScores');
+
+  if (numPlayers > 1) {
+    var maxScore = Math.max.apply(null, playerScores);
+    var winners = [];
+    playerScores.forEach(function(sc, i) { if (sc === maxScore) winners.push(i); });
+
+    if (winners.length === 1) {
+      document.getElementById('winTitle').textContent = PLAYER_NAMES[winners[0]] + ' ניצח! 🏆';
+    } else {
+      document.getElementById('winTitle').textContent = 'תיקו! 🤝';
+    }
+
+    scoresDiv.innerHTML = '<div class="win-scores">' +
+      playerScores.map(function(sc, i) {
+        return '<div class="win-score-item' + (sc === maxScore ? ' winner' : '') + '">' +
+          '<span style="color:' + PLAYER_COLORS[i] + '">' + PLAYER_NAMES[i] + '</span>' +
+          '<br>' + sc + ' זוגות</div>';
+      }).join('') + '</div>';
+
+    document.getElementById('winMsg').innerHTML =
+      'סה"כ ' + moves + ' מהלכים, ' + m + ':' + s + ' דקות';
+  } else {
+    document.getElementById('winTitle').textContent = 'כל הכבוד!';
+    scoresDiv.innerHTML = '';
+    var stars = moves <= LEVEL_PAIRS[level] + 2 ? '⭐⭐⭐' :
+      moves <= LEVEL_PAIRS[level] * 2 ? '⭐⭐' : '⭐';
+    document.getElementById('winMsg').innerHTML =
+      stars + '<br>סיימת ב-' + moves + ' מהלכים, ' + m + ':' + s + ' דקות';
+  }
+
   document.getElementById('winOverlay').classList.add('show');
 }
 
 function closeWin() {
   document.getElementById('winOverlay').classList.remove('show');
 }
-
-newGame();
 </script>
 </body>
 </html>

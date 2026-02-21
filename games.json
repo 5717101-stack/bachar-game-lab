@@ -1,0 +1,20 @@
+[
+  {
+    "id": "parkour",
+    "name": "Parkour Princess",
+    "nameHe": "פארקור נסיכה",
+    "emoji": "👸🏼",
+    "author": "June",
+    "color": "#FF6B9D",
+    "description": "קפצי, אספי, ונצחי!"
+  },
+  {
+    "id": "character-designer",
+    "name": "Character Studio",
+    "nameHe": "סטודיו דמויות",
+    "emoji": "🎨",
+    "author": "Adam",
+    "color": "#A78BFA",
+    "description": "עצב את הדמות שלך!"
+  }
+]

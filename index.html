@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bachar Game Lab 🎮</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --surface-hover: #25253d;
+  --border: rgba(255,255,255,0.06);
+  --text: #f0eef6;
+  --dim: rgba(255,255,255,0.5);
+  --glow: rgba(167,139,250,0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Rubik', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.bg-effects {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-effects .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.12;
+  animation: float 20s ease-in-out infinite;
+}
+
+.bg-effects .orb:nth-child(1) {
+  width: 400px; height: 400px;
+  background: #7c3aed;
+  top: -100px; right: -100px;
+  animation-delay: 0s;
+}
+
+.bg-effects .orb:nth-child(2) {
+  width: 350px; height: 350px;
+  background: #ec4899;
+  bottom: -80px; left: -80px;
+  animation-delay: -7s;
+}
+
+.bg-effects .orb:nth-child(3) {
+  width: 300px; height: 300px;
+  background: #3b82f6;
+  top: 40%; left: 50%;
+  animation-delay: -14s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+header .logo {
+  font-size: 3.5em;
+  line-height: 1;
+  margin-bottom: 12px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+header h1 {
+  font-size: 2em;
+  font-weight: 900;
+  background: linear-gradient(135deg, #a78bfa, #ec4899, #fb923c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+header p {
+  color: var(--dim);
+  font-size: 1.05em;
+  font-weight: 500;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.game-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 24px;
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.game-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.game-card:hover::before {
+  opacity: 1;
+}
+
+.game-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.game-card .emoji {
+  font-size: 3em;
+  line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+  transition: transform 0.3s;
+}
+
+.game-card:hover .emoji {
+  transform: scale(1.15) rotate(-5deg);
+}
+
+.game-card .name {
+  font-size: 1.15em;
+  font-weight: 800;
+}
+
+.game-card .desc {
+  font-size: 0.85em;
+  color: var(--dim);
+  line-height: 1.4;
+}
+
+.game-card .author-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75em;
+  font-weight: 700;
+  background: rgba(255,255,255,0.06);
+  color: var(--dim);
+}
+
+.game-card .play-hint {
+  margin-top: 4px;
+  font-size: 0.8em;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.3s;
+}
+
+.game-card:hover .play-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--dim);
+  font-size: 0.85em;
+}
+
+footer .family {
+  font-size: 1.5em;
+  margin-bottom: 8px;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--dim);
+}
+
+.loading .spinner {
+  font-size: 2em;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 500px) {
+  .container { padding: 28px 16px 40px; }
+  header .logo { font-size: 2.8em; }
+  header h1 { font-size: 1.5em; }
+  .games-grid { grid-template-columns: 1fr; gap: 16px; }
+  .game-card { padding: 24px 20px; flex-direction: row; text-align: start; }
+  .game-card .emoji { font-size: 2.4em; }
+  .game-card .info { flex: 1; }
+  .game-card .play-hint { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-effects">
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="logo">🎮</div>
+    <h1>Bachar Game Lab</h1>
+    <p>המשחקים של המשפחה</p>
+  </header>
+
+  <div class="games-grid" id="gamesGrid">
+    <div class="loading"><span class="spinner">⚡</span><p>טוען משחקים...</p></div>
+  </div>
+
+  <footer>
+    <div class="family">👨‍👩‍👧‍👦</div>
+    <p>Bachar Family Game Lab</p>
+  </footer>
+</div>
+
+<script>
+(async function() {
+  const grid = document.getElementById('gamesGrid');
+  
+  try {
+    const res = await fetch('games.json');
+    const games = await res.json();
+    
+    if (!games.length) {
+      grid.innerHTML = '<p style="text-align:center;color:var(--dim);grid-column:1/-1">אין משחקים עדיין... הוסיפו את הראשון! 🚀</p>';
+      return;
+    }
+    
+    grid.innerHTML = games.map(g => `
+      <a class="game-card" href="games/${g.id}/" style="--card-color: ${g.color}">
+        <style>
+          .game-card[style*="${g.color}"]::before {
+            background: radial-gradient(circle at 50% 0%, ${g.color}22, transparent 70%);
+          }
+          .game-card[style*="${g.color}"] .play-hint {
+            color: ${g.color};
+          }
+        </style>
+        <div class="emoji">${g.emoji}</div>
+        <div class="info">
+          <div class="name">${g.nameHe || g.name}</div>
+          <div class="desc">${g.description}</div>
+          <div class="author-badge">✦ ${g.author}</div>
+        </div>
+        <div class="play-hint">▶ לשחק!</div>
+      </a>
+    `).join('');
+    
+  } catch (e) {
+    grid.innerHTML = '<p style="text-align:center;color:#ef4444;grid-column:1/-1">שגיאה בטעינת המשחקים 😕</p>';
+    console.error('Failed to load games:', e);
+  }
+})();
+</script>
+
+</body>
+</html>

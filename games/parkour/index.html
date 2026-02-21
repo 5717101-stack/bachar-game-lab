@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Parkour Princess 👸🏼</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👸🏼</text></svg>">
+</head>
+<body>
+    <a href="../../" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.5);color:#fff;text-decoration:none;padding:6px 14px;border-radius:12px;font-family:sans-serif;font-size:0.85em;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">🏠 משחקים</a>
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- HUD Overlay -->
+        <div id="hud" class="hidden">
+            <div id="hud-left">
+                <span id="hud-level">שלב 1</span>
+                <span id="hud-level-name">עולם הלבבות</span>
+            </div>
+            <div id="hud-right">
+                <span id="hud-score">♥️ 0 / 12</span>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="overlay">
+            <div class="screen-content">
+                <div class="title-sparkles">✨</div>
+                <h1 class="game-title">Parkour Princess</h1>
+                <div class="title-emoji">👸🏼</div>
+                <p class="subtitle">!קפצי, אספי, ונצחי</p>
+                <div class="level-preview">
+                    <span>♥️</span>
+                    <span>🎀</span>
+                    <span>🧁</span>
+                    <span>🍭</span>
+                    <span>👗</span>
+                    <span>👠</span>
+                </div>
+                <button id="btn-play" class="btn-main" onclick="game.start()">!בואי נשחק 🎮</button>
+            </div>
+        </div>
+
+        <!-- Level Intro Screen -->
+        <div id="level-screen" class="overlay hidden">
+            <div class="screen-content">
+                <div id="level-emoji" class="level-big-emoji">♥️</div>
+                <h2 id="level-title" class="level-title-text">עולם הלבבות</h2>
+                <p id="level-goal" class="level-goal">אספי 12 לבבות</p>
+                <p class="level-hint">Space / לחצי כדי לקפוץ</p>
+            </div>
+        </div>
+
+        <!-- Level Complete Screen -->
+        <div id="complete-screen" class="overlay hidden">
+            <div class="screen-content">
+                <div class="complete-stars">⭐ 🌟 ⭐</div>
+                <h2 class="complete-title">!כל הכבוד 🎉</h2>
+                <p id="complete-msg" class="complete-msg">סיימת את שלב 1!</p>
+                <p id="complete-score" class="complete-score">♥️ 12 / 12</p>
+                <button id="btn-next" class="btn-main" onclick="game.nextLevel()">!לשלב הבא ➡️</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="overlay hidden">
+            <div class="screen-content">
+                <h2 class="gameover-title">😢 אופס!</h2>
+                <p id="gameover-msg" class="gameover-msg">נפלת! נסי שוב</p>
+                <p id="gameover-score" class="gameover-score">ניקוד: 0</p>
+                <button id="btn-retry" class="btn-main" onclick="game.retry()">🔄 נסי שוב</button>
+                <button id="btn-menu" class="btn-secondary" onclick="game.goToMenu()">🏠 תפריט</button>
+            </div>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="overlay hidden">
+            <div class="screen-content victory-content">
+                <div class="victory-fireworks">🎆 🎇 🎆</div>
+                <h1 class="victory-title">🏆 ניצחת! 🏆</h1>
+                <h2 class="victory-subtitle">!את אלופת הפארקור</h2>
+                <div class="victory-emojis">
+                    <span>♥️</span><span>🎀</span><span>🧁</span>
+                    <span>🍭</span><span>👗</span><span>👠</span>
+                </div>
+                <p class="victory-msg">עברת את כל 6 השלבים!</p>
+                <button id="btn-replay" class="btn-main" onclick="game.goToMenu()">🎮 שחקי שוב</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/game.js"></script>
+</body>
+</html>

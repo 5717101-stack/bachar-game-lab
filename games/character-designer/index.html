@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Adam's Character Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --hue:260;
+  --bg1:hsl(var(--hue),30%,12%);
+  --bg2:hsl(var(--hue),25%,16%);
+  --panel:hsl(var(--hue),20%,18%);
+  --panel-hover:hsl(var(--hue),20%,22%);
+  --border:hsla(var(--hue),20%,40%,0.15);
+  --text:#f0eef6;
+  --dim:hsla(var(--hue),15%,70%,0.7);
+  --accent:#a78bfa;
+  --accent2:#f472b6;
+  --accent3:#fb923c;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Rubik',sans-serif;
+  background:var(--bg1);
+  color:var(--text);
+  user-select:none;-webkit-user-select:none;
+  display:flex;flex-direction:column;
+}
+
+/* ── Top Bar ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 18px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  z-index:10;flex-shrink:0;
+}
+.topbar h1{
+  font-size:1.15em;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.top-actions{display:flex;gap:6px}
+.top-btn{
+  padding:7px 14px;border-radius:10px;border:none;
+  font-family:'Rubik',sans-serif;font-size:0.82em;font-weight:700;
+  cursor:pointer;transition:all 0.2s;color:var(--text);
+}
+.top-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.top-btn:active{transform:translateY(0)}
+.top-btn.rand{background:linear-gradient(135deg,#7c3aed,#ec4899)}
+.top-btn.save{background:linear-gradient(135deg,#059669,#10b981)}
+.top-btn.reset{background:hsla(var(--hue),15%,30%,0.8)}
+
+/* ── Character Stage (center, no box) ── */
+.stage{
+  flex:1;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.stage-bg{
+  position:absolute;inset:0;
+  transition:background 0.5s;
+}
+#character{
+  position:relative;z-index:2;
+  filter:drop-shadow(0 8px 24px rgba(0,0,0,0.35));
+  transition:filter 0.3s;
+  max-height:100%;max-width:100%;
+}
+
+/* Name floating above character */
+.char-name-wrap{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  z-index:5;
+}
+.char-name{
+  background:hsla(var(--hue),20%,15%,0.75);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--border);
+  border-radius:12px;padding:6px 20px;
+  font-family:'Rubik',sans-serif;font-size:1em;font-weight:700;
+  color:var(--text);text-align:center;outline:none;
+  min-width:160px;
+}
+.char-name::placeholder{color:var(--dim)}
+
+/* ── Bottom Panel ── */
+.bottom{
+  flex-shrink:0;z-index:10;
+  background:var(--panel);
+  border-top:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+
+/* Category Tabs */
+.tabs{
+  display:flex;overflow-x:auto;
+  scrollbar-width:none;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex-shrink:0;
+  padding:10px 16px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;transition:all 0.2s;
+  border-bottom:3px solid transparent;
+  min-width:64px;
+}
+.tab:hover{background:var(--panel-hover)}
+.tab.on{border-bottom-color:var(--accent);background:var(--panel-hover)}
+.tab-icon{font-size:1.3em;line-height:1}
+.tab-label{font-size:0.6em;font-weight:600;color:var(--dim);white-space:nowrap}
+.tab.on .tab-label{color:var(--accent)}
+
+/* Options Strip */
+.opts-area{
+  height:80px;
+  overflow-x:auto;overflow-y:hidden;
+  display:flex;align-items:center;
+  padding:0 14px;gap:8px;
+  scrollbar-width:none;
+}
+.opts-area::-webkit-scrollbar{display:none}
+
+/* Color swatch */
+.cs{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  border:3px solid transparent;
+  cursor:pointer;transition:all 0.2s;
+  position:relative;
+}
+.cs:hover{transform:scale(1.12)}
+.cs.on{border-color:var(--text);box-shadow:0 0 14px hsla(var(--hue),60%,70%,0.3);transform:scale(1.12)}
+.cs.on::after{
+  content:'✓';position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:15px;color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);
+}
+.cs.lt.on::after{color:#333;text-shadow:none}
+
+/* Style pill */
+.sp{
+  flex-shrink:0;
+  padding:10px 18px;border-radius:12px;
+  border:2px solid var(--border);
+  background:transparent;color:var(--dim);
+  font-family:'Rubik',sans-serif;font-size:0.88em;font-weight:600;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+.sp:hover{border-color:hsla(var(--hue),30%,50%,0.4);color:var(--text)}
+.sp.on{border-color:var(--accent);color:var(--text);background:hsla(260,60%,60%,0.12)}
+
+/* Accessory item */
+.ai{
+  flex-shrink:0;width:54px;height:54px;border-radius:14px;
+  border:2px solid var(--border);background:hsla(var(--hue),15%,20%,0.5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5em;cursor:pointer;transition:all 0.2s;
+}
+.ai:hover{background:var(--panel-hover);transform:translateY(-2px)}
+.ai.on{border-color:var(--accent3);background:hsla(30,80%,55%,0.1);box-shadow:0 0 16px hsla(30,80%,55%,0.15)}
+
+/* Background swatch */
+.bs{
+  flex-shrink:0;width:48px;height:48px;border-radius:12px;
+  border:3px solid transparent;cursor:pointer;transition:all 0.2s;
+}
+.bs:hover{transform:scale(1.08)}
+.bs.on{border-color:var(--text);box-shadow:0 0 12px hsla(var(--hue),60%,70%,0.2)}
+
+/* Animations */
+@keyframes pop{0%{transform:scale(0.95)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+.pop{animation:pop 0.25s ease}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.floating{animation:float 3s ease-in-out infinite}
+
+@media(min-width:700px){
+  .opts-area{height:90px;padding:0 20px}
+  .cs{width:48px;height:48px}
+  .ai{width:60px;height:60px;font-size:1.7em}
+}
+</style>
+</head>
+<body>
+
+<a href="../../" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.5);color:#fff;text-decoration:none;padding:6px 14px;border-radius:12px;font-family:sans-serif;font-size:0.85em;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">🏠 משחקים</a>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <h1>✦ Character Studio</h1>
+  <div class="top-actions">
+    <button class="top-btn rand" onclick="randomize()">🎲 אקראי</button>
+    <button class="top-btn save" onclick="saveImg()">💾 שמור</button>
+    <button class="top-btn reset" onclick="resetAll()">↺</button>
+  </div>
+</div>
+
+<!-- Character Stage -->
+<div class="stage">
+  <div class="stage-bg" id="stageBg"></div>
+  <svg id="character" class="floating" width="320" height="420" viewBox="0 0 320 420"></svg>
+  <div class="char-name-wrap">
+    <input class="char-name" id="charName" placeholder="שם הדמות..." maxlength="20">
+  </div>
+</div>
+
+<!-- Bottom Panel -->
+<div class="bottom">
+  <div class="tabs" id="tabs"></div>
+  <div class="opts-area" id="optsArea"></div>
+</div>
+
+<script>
+/* ══════════ DATA ══════════ */
+const D={
+  skin:[
+    {n:'חלב',c:'#FDEEE0'},{n:'אפרסק',c:'#F8D5B8'},{n:'שקד',c:'#E8B896'},
+    {n:'זהב',c:'#D4A574'},{n:'קרמל',c:'#C0885C'},{n:'קקאו',c:'#A06B3F'},
+    {n:'שוקולד',c:'#7A4E2D'},{n:'אספרסו',c:'#4A2D1A'},
+  ],
+  hairColor:[
+    {n:'שחור',c:'#111118'},{n:'שחור חם',c:'#1C1412'},{n:'חום כהה',c:'#2E1B0E'},
+    {n:'חום',c:'#5C3317'},{n:'ערמוני',c:'#8B4513'},{n:'נחושת',c:'#B8733C'},
+    {n:'בלונד כהה',c:'#C49A3C'},{n:'בלונד',c:'#E0C56C'},{n:'פלטינה',c:'#F0E8C8'},
+    {n:'ג׳ינג׳י',c:'#D64E12'},{n:'אדום',c:'#CC1133'},
+    {n:'ורוד',c:'#F472B6'},{n:'סגול',c:'#8B5CF6'},{n:'כחול',c:'#3B82F6'},
+    {n:'ירוק',c:'#22C55E'},{n:'טורקיז',c:'#06B6D4'},{n:'לבן',c:'#E8E8E8'},
+  ],
+  hairStyle:[
+    {n:'קצר',id:'short'},{n:'קלאסי',id:'classic'},{n:'בינוני',id:'mid'},
+    {n:'גלי',id:'wavy'},{n:'מתולתל',id:'curly'},{n:'אפרו',id:'afro'},
+    {n:'ארוך',id:'long'},{n:'קוקו',id:'pony'},{n:'צמות',id:'braids'},
+    {n:'ספייקי',id:'spiky'},{n:'מוהיקן',id:'hawk'},{n:'קרח',id:'bald'},
+  ],
+  eyeColor:[
+    {n:'שחור',c:'#1A0E05'},{n:'חום כהה',c:'#3D1C02'},{n:'חום',c:'#6B3A2A'},
+    {n:'דבש',c:'#B8860B'},{n:'ירוק זית',c:'#6B8E23'},{n:'ירוק',c:'#2E8B57'},
+    {n:'כחול',c:'#2563EB'},{n:'כחול בהיר',c:'#60A5FA'},{n:'אפור',c:'#708090'},
+    {n:'סגול',c:'#7C3AED'},{n:'ורוד',c:'#EC4899'},{n:'אדום',c:'#DC2626'},
+  ],
+  mouth:[
+    {n:'חיוך',id:'smile'},{n:'חייכן',id:'grin'},{n:'שמח',id:'open'},
+    {n:'רגוע',id:'neutral'},{n:'שובב',id:'smirk'},{n:'מפתיע',id:'ooh'},
+    {n:'מצחיק',id:'tongue'},{n:'😗',id:'kiss'},
+  ],
+  eyebrows:[
+    {n:'רגיל',id:'normal'},{n:'ידידותי',id:'soft'},{n:'מופתע',id:'raised'},
+    {n:'רציני',id:'angry'},{n:'עצוב',id:'sad'},{n:'אחד למעלה',id:'one'},
+  ],
+  accessories:[
+    {e:'👓',n:'משקפיים',id:'glasses'},{e:'🕶️',n:'שמש',id:'sunglasses'},
+    {e:'🎩',n:'כובע',id:'hat'},{e:'🧢',n:'מצחייה',id:'cap'},
+    {e:'👑',n:'כתר',id:'crown'},{e:'🎀',n:'סרט',id:'headband'},
+    {e:'💎',n:'עגילים',id:'earrings'},{e:'📿',n:'שרשרת',id:'necklace'},
+    {e:'⭐',n:'כוכב',id:'star'},{e:'🌸',n:'פרח',id:'flower'},
+    {e:'🎧',n:'אוזניות',id:'headphones'},{e:'😷',n:'מסכה',id:'mask'},
+  ],
+  shirtColor:[
+    {n:'אדום',c:'#DC2626'},{n:'כתום',c:'#EA580C'},{n:'צהוב',c:'#EAB308'},
+    {n:'ירוק',c:'#16A34A'},{n:'טורקיז',c:'#0891B2'},{n:'כחול',c:'#2563EB'},
+    {n:'סגול',c:'#7C3AED'},{n:'ורוד',c:'#DB2777'},
+    {n:'לבן',c:'#F1F5F9'},{n:'אפור',c:'#64748B'},{n:'שחור',c:'#1E293B'},
+  ],
+  shirtStyle:[
+    {n:'טי שירט',id:'tee'},{n:'צווארון',id:'collar'},
+    {n:'קפוצ׳ון',id:'hoodie'},{n:'מכופתרת',id:'button'},
+  ],
+  bg:[
+    {n:'סגול כהה',c:'linear-gradient(160deg,#1a1040 0%,#2d1b69 50%,#1a1040 100%)'},
+    {n:'חלל',c:'linear-gradient(160deg,#0a0a1a 0%,#1a1a3e 50%,#0a0a1a 100%)'},
+    {n:'שקיעה',c:'linear-gradient(160deg,#1a0530 0%,#4a1942 40%,#b44e3e 100%)'},
+    {n:'יער',c:'linear-gradient(160deg,#0a1a15 0%,#1a3c34 50%,#0a1a15 100%)'},
+    {n:'אוקיינוס',c:'linear-gradient(160deg,#0c1445 0%,#1e3a5f 50%,#0c1445 100%)'},
+    {n:'אש',c:'linear-gradient(160deg,#1a0a0a 0%,#4a1a1a 50%,#1a0a0a 100%)'},
+    {n:'שמיים',c:'linear-gradient(160deg,#87CEEB 0%,#E0F2FE 100%)'},
+    {n:'מנטה',c:'linear-gradient(160deg,#d1fae5 0%,#a7f3d0 100%)'},
+    {n:'רוז',c:'linear-gradient(160deg,#fce7f3 0%,#fbcfe8 100%)'},
+    {n:'לבנדר',c:'linear-gradient(160deg,#ede9fe 0%,#ddd6fe 100%)'},
+    {n:'לבן',c:'linear-gradient(160deg,#f8fafc 0%,#e2e8f0 100%)'},
+    {n:'זהב',c:'linear-gradient(160deg,#fef3c7 0%,#fde68a 100%)'},
+  ],
+};
+
+let S={
+  skin:1,hairColor:3,hairStyle:'mid',eyeColor:2,mouth:'smile',eyebrows:'normal',
+  acc:new Set(),shirtColor:5,shirtStyle:'tee',bg:0,
+};
+
+/* ══════════ CATEGORIES / TABS ══════════ */
+const CATS=[
+  {id:'skin',icon:'🎨',label:'עור',type:'color',arr:'skin',key:'skin'},
+  {id:'hs',icon:'💇',label:'סגנון',type:'pill',arr:'hairStyle',key:'hairStyle'},
+  {id:'hc',icon:'🖌️',label:'צבע שיער',type:'color',arr:'hairColor',key:'hairColor'},
+  {id:'ec',icon:'👁️',label:'עיניים',type:'color',arr:'eyeColor',key:'eyeColor'},
+  {id:'eb',icon:'🤨',label:'גבות',type:'pill',arr:'eyebrows',key:'eyebrows'},
+  {id:'mo',icon:'👄',label:'פה',type:'pill',arr:'mouth',key:'mouth'},
+  {id:'acc',icon:'✨',label:'אקססוריז',type:'acc',arr:'accessories'},
+  {id:'sc',icon:'👕',label:'חולצה',type:'color',arr:'shirtColor',key:'shirtColor'},
+  {id:'ss',icon:'👔',label:'סגנון',type:'pill',arr:'shirtStyle',key:'shirtStyle'},
+  {id:'bg',icon:'🌈',label:'רקע',type:'bg',arr:'bg'},
+];
+let activeCat=0;
+
+function buildTabs(){
+  document.getElementById('tabs').innerHTML=CATS.map((c,i)=>
+    `<div class="tab${i===activeCat?' on':''}" onclick="switchCat(${i})">
+      <span class="tab-icon">${c.icon}</span><span class="tab-label">${c.label}</span>
+    </div>`
+  ).join('');
+}
+
+function switchCat(i){activeCat=i;buildTabs();buildOpts()}
+
+function buildOpts(){
+  const c=CATS[activeCat];const el=document.getElementById('optsArea');
+  let html='';
+  if(c.type==='color'){
+    html=D[c.arr].map((item,i)=>{
+      const on=S[c.key]===i;
+      const light=lum(item.c)>160;
+      return `<div class="cs${on?' on':''}${light?' lt':''}" style="background:${item.c}" onclick="pick('${c.key}',${i})" title="${item.n}"></div>`;
+    }).join('');
+  } else if(c.type==='pill'){
+    html=D[c.arr].map(item=>{
+      const on=S[c.key]===item.id;
+      return `<div class="sp${on?' on':''}" onclick="pickS('${c.key}','${item.id}')">${item.n}</div>`;
+    }).join('');
+  } else if(c.type==='acc'){
+    html=D[c.arr].map(a=>{
+      const on=S.acc.has(a.id);
+      return `<div class="ai${on?' on':''}" onclick="toggleAcc('${a.id}')" title="${a.n}">${a.e}</div>`;
+    }).join('');
+  } else if(c.type==='bg'){
+    html=D[c.arr].map((b,i)=>{
+      const on=S.bg===i;
+      return `<div class="bs${on?' on':''}" style="background:${b.c}" onclick="pickBg(${i})" title="${b.n}"></div>`;
+    }).join('');
+  }
+  el.innerHTML=html;
+}
+
+function pick(k,v){S[k]=v;refresh()}
+function pickS(k,v){S[k]=v;refresh()}
+function pickBg(i){S.bg=i;refresh()}
+function toggleAcc(id){if(S.acc.has(id))S.acc.delete(id);else S.acc.add(id);refresh()}
+
+function refresh(){
+  buildTabs();buildOpts();render();
+  document.getElementById('stageBg').style.background=D.bg[S.bg].c;
+  const svg=document.getElementById('character');
+  svg.classList.remove('pop');void svg.offsetWidth;svg.classList.add('pop');
+}
+
+/* ══════════ UTILS ══════════ */
+function dk(h,p){let r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);r=Math.max(0,r*(1-p/100)|0);g=Math.max(0,g*(1-p/100)|0);b=Math.max(0,b*(1-p/100)|0);return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')}
+function lt(h,p){let r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);r=Math.min(255,r+(255-r)*p/100|0);g=Math.min(255,g+(255-g)*p/100|0);b=Math.min(255,b+(255-b)*p/100|0);return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')}
+function lum(c){return(parseInt(c.slice(1,3),16)*299+parseInt(c.slice(3,5),16)*587+parseInt(c.slice(5,7),16)*114)/1000}
+
+/* ══════════ SVG RENDER ══════════ */
+function render(){
+  const sk=D.skin[S.skin].c, skd=dk(sk,12), skl=lt(sk,8);
+  const hc=D.hairColor[S.hairColor].c, hcd=dk(hc,15), hcl=lt(hc,20);
+  const ec=D.eyeColor[S.eyeColor].c;
+  const sc=D.shirtColor[S.shirtColor].c, scd=dk(sc,18), scl=lt(sc,12);
+  let h='';
+
+  // Shirt
+  h+=shirtSVG(S.shirtStyle,sc,scd,scl);
+
+  // Neck
+  h+=`<path d="M143 255 Q143 248 160 246 Q177 248 177 255 L177 288 Q170 292 160 292 Q150 292 143 288Z" fill="${sk}"/>`;
+  h+=`<path d="M150 250 L150 285 Q155 288 160 288 L160 250Z" fill="${skd}" opacity="0.08"/>`;
+
+  // Head
+  h+=`<ellipse cx="160" cy="160" rx="72" ry="80" fill="${sk}"/>`;
+  h+=`<ellipse cx="160" cy="168" rx="62" ry="68" fill="${skd}" opacity="0.04"/>`;
+
+  // Ears
+  h+=`<ellipse cx="88" cy="165" rx="13" ry="18" fill="${sk}"/>`;
+  h+=`<ellipse cx="88" cy="165" rx="8" ry="12" fill="${skd}" opacity="0.12"/>`;
+  h+=`<ellipse cx="232" cy="165" rx="13" ry="18" fill="${sk}"/>`;
+  h+=`<ellipse cx="232" cy="165" rx="8" ry="12" fill="${skd}" opacity="0.12"/>`;
+
+  // Hair behind (for long styles)
+  if(['long','wavy','pony','braids'].includes(S.hairStyle)) h+=hairBehind(S.hairStyle,hc,hcd);
+
+  // Hair front
+  h+=hairFront(S.hairStyle,hc,hcd,hcl);
+
+  // EYES — large anime style
+  // White
+  h+=`<ellipse cx="132" cy="168" rx="20" ry="22" fill="white"/>`;
+  h+=`<ellipse cx="188" cy="168" rx="20" ry="22" fill="white"/>`;
+  // Iris outer
+  h+=`<circle cx="134" cy="169" r="14" fill="${ec}"/>`;
+  h+=`<circle cx="190" cy="169" r="14" fill="${ec}"/>`;
+  // Iris inner ring
+  h+=`<circle cx="134" cy="169" r="10" fill="${dk(ec,25)}"/>`;
+  h+=`<circle cx="190" cy="169" r="10" fill="${dk(ec,25)}"/>`;
+  // Iris detail - lighter arc
+  h+=`<path d="M126 165 Q134 158 142 165" fill="${lt(ec,30)}" opacity="0.35"/>`;
+  h+=`<path d="M182 165 Q190 158 198 165" fill="${lt(ec,30)}" opacity="0.35"/>`;
+  // Pupil
+  h+=`<circle cx="135" cy="170" r="6" fill="#060608"/>`;
+  h+=`<circle cx="191" cy="170" r="6" fill="#060608"/>`;
+  // Big highlight
+  h+=`<ellipse cx="140" cy="163" rx="5" ry="4.5" fill="white" opacity="0.92"/>`;
+  h+=`<ellipse cx="196" cy="163" rx="5" ry="4.5" fill="white" opacity="0.92"/>`;
+  // Small highlight
+  h+=`<circle cx="129" cy="174" r="2.5" fill="white" opacity="0.55"/>`;
+  h+=`<circle cx="185" cy="174" r="2.5" fill="white" opacity="0.55"/>`;
+  // Eyelid line
+  h+=`<path d="M112 158 Q132 148 152 158" fill="none" stroke="${dk(hc,10)}" stroke-width="3" stroke-linecap="round"/>`;
+  h+=`<path d="M168 158 Q188 148 208 158" fill="none" stroke="${dk(hc,10)}" stroke-width="3" stroke-linecap="round"/>`;
+
+  // Eyebrows
+  h+=eyebrowSVG(S.eyebrows,dk(hc,10));
+
+  // Nose
+  h+=`<path d="M155 192 Q160 200 165 192" fill="none" stroke="${skd}" stroke-width="2" stroke-linecap="round" opacity="0.3"/>`;
+
+  // Mouth
+  h+=mouthSVG(S.mouth);
+
+  // Blush
+  h+=`<ellipse cx="112" cy="198" rx="14" ry="7" fill="#FF9999" opacity="0.15"/>`;
+  h+=`<ellipse cx="208" cy="198" rx="14" ry="7" fill="#FF9999" opacity="0.15"/>`;
+
+  // Accessories
+  for(const a of S.acc) h+=accSVG(a);
+
+  document.getElementById('character').innerHTML=h;
+}
+
+/* ── HAIR ── */
+function hairBehind(s,c,cd){
+  switch(s){
+    case 'long': return `<path d="M88 135 Q88 130 88 150 L85 270 Q88 280 95 275 L95 155 Z" fill="${c}"/>
+      <path d="M232 135 Q232 130 232 150 L235 270 Q232 280 225 275 L225 155 Z" fill="${c}"/>`;
+    case 'wavy': return `<path d="M86 140 Q82 165 88 185 Q94 205 86 225 Q80 240 86 260" fill="none" stroke="${c}" stroke-width="18" stroke-linecap="round"/>
+      <path d="M234 140 Q238 165 232 185 Q226 205 234 225 Q240 240 234 260" fill="none" stroke="${c}" stroke-width="18" stroke-linecap="round"/>`;
+    case 'pony': return `<path d="M230 125 Q248 140 252 180 Q254 220 244 255 Q240 260 242 225 Q244 190 238 160Z" fill="${c}"/>`;
+    case 'braids': return `<path d="M92 135 L88 175 L94 195 L88 215 L94 240 L88 258" fill="none" stroke="${c}" stroke-width="15" stroke-linecap="round"/>
+      <path d="M228 135 L232 175 L226 195 L232 215 L226 240 L232 258" fill="none" stroke="${c}" stroke-width="15" stroke-linecap="round"/>
+      <circle cx="88" cy="262" r="6" fill="${cd}"/><circle cx="232" cy="262" r="6" fill="${cd}"/>`;
+    default: return '';
+  }
+}
+
+function hairFront(s,c,cd,cl){
+  const shine=`<path d="M125 90 Q160 78 195 90" fill="none" stroke="${cl}" stroke-width="2.5" opacity="0.2"/>`;
+  switch(s){
+    case 'short': return `<path d="M90 130 Q90 82 160 75 Q230 82 230 130 L228 140 Q225 130 160 128 Q95 130 92 140Z" fill="${c}"/>${shine}`;
+    case 'classic': return `<path d="M88 135 Q88 80 160 72 Q232 80 232 135" fill="${c}"/>
+      <path d="M88 135 L90 145 Q95 138 100 140" fill="${c}"/>
+      <path d="M232 135 L230 145 Q225 138 220 140" fill="${c}"/>${shine}`;
+    case 'mid': return `<path d="M85 135 Q85 75 160 68 Q235 75 235 135 L236 165 Q232 158 228 162 L228 145 Q224 150 220 145 L100 145 Q96 150 92 145 L92 162 Q88 158 84 165Z" fill="${c}"/>${shine}`;
+    case 'wavy': return `<path d="M85 135 Q85 75 160 68 Q235 75 235 135" fill="${c}"/>${shine}`;
+    case 'curly': return `<path d="M85 135 Q85 78 160 70 Q235 78 235 135" fill="${c}"/>
+      ${[[98,88],[128,78],[160,74],[192,78],[222,88]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="13" fill="${c}"/>`).join('')}
+      ${[[82,140],[82,162],[85,184],[235,140],[238,162],[235,184]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="14" fill="${c}"/>`).join('')}`;
+    case 'afro': return `<ellipse cx="160" cy="130" rx="92" ry="88" fill="${c}"/>
+      <ellipse cx="160" cy="120" rx="86" ry="82" fill="${cd}" opacity="0.1"/>
+      ${[0,36,72,108,144,180,216,252,288,324].map(a=>{const R=86;const x=160+Math.cos(a*Math.PI/180)*R;const y=130+Math.sin(a*Math.PI/180)*R;return`<circle cx="${x}" cy="${y}" r="12" fill="${c}"/>`;}).join('')}`;
+    case 'long': return `<path d="M85 135 Q85 75 160 68 Q235 75 235 135" fill="${c}"/>${shine}`;
+    case 'pony': return `<path d="M90 130 Q90 80 160 72 Q230 80 230 130" fill="${c}"/>
+      <circle cx="230" cy="118" r="8" fill="#F472B6"/>${shine}`;
+    case 'braids': return `<path d="M90 130 Q90 80 160 72 Q230 80 230 130" fill="${c}"/>
+      <line x1="160" y1="72" x2="160" y2="130" stroke="${cd}" stroke-width="1" opacity="0.15"/>${shine}`;
+    case 'spiky': return `<path d="M92 142 L108 60 L130 120 L152 40 L170 110 L190 35 L210 115 L230 55 L228 142" fill="${c}"/>
+      <path d="M92 142 Q92 100 160 95 Q228 100 228 142" fill="${c}"/>`;
+    case 'hawk': return `<path d="M92 142 Q92 105 160 98 Q228 105 228 142" fill="${dk(c,35)}"/>
+      <path d="M138 98 L135 30 L150 70 L158 18 L168 65 L178 25 L185 72 L188 35 L182 98" fill="${c}"/>`;
+    case 'bald': return '';
+    default: return '';
+  }
+}
+
+/* ── EYEBROWS ── */
+function eyebrowSVG(style,c){
+  const L={
+    normal:[`M112 148 Q132 138 152 148`,`M168 148 Q188 138 208 148`],
+    soft:[`M115 150 Q132 143 150 148`,`M170 148 Q188 143 205 150`],
+    raised:[`M112 142 Q132 130 152 140`,`M168 140 Q188 130 208 142`],
+    angry:[`M118 142 Q132 148 152 142`,`M168 142 Q188 148 202 142`],
+    sad:[`M112 148 Q132 142 152 150`,`M168 150 Q188 142 208 148`],
+    one:[`M112 142 Q132 130 152 140`,`M168 148 Q188 138 208 148`],
+  };
+  const paths=L[style]||L.normal;
+  return paths.map(d=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`).join('');
+}
+
+/* ── MOUTH ── */
+function mouthSVG(style){
+  const M={
+    smile:`<path d="M140 215 Q150 228 160 225 Q170 228 180 215" fill="none" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M147 218 Q160 224 173 218" fill="#E57373" opacity="0.25"/>`,
+    grin:`<path d="M135 212 Q148 230 160 226 Q172 230 185 212" fill="#E57373" stroke="#C0392B" stroke-width="2" stroke-linecap="round"/>
+      <path d="M140 214 Q160 210 180 214" fill="white" opacity="0.6"/>`,
+    open:`<ellipse cx="160" cy="218" rx="15" ry="12" fill="#C0392B"/>
+      <ellipse cx="160" cy="224" rx="10" ry="5" fill="#A0202A"/>
+      <path d="M148 215 Q160 210 172 215" fill="white" opacity="0.5"/>`,
+    neutral:`<line x1="145" y1="218" x2="175" y2="218" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round"/>`,
+    smirk:`<path d="M143 218 Q158 218 172 210" fill="none" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round"/>`,
+    ooh:`<ellipse cx="160" cy="220" rx="10" ry="12" fill="#C0392B"/>
+      <ellipse cx="160" cy="222" rx="7" ry="8" fill="#8B1A1A" opacity="0.4"/>`,
+    tongue:`<path d="M138 212 Q150 226 160 222 Q170 226 182 212" fill="none" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse cx="160" cy="226" rx="8" ry="6" fill="#F472B6"/>`,
+    kiss:`<path d="M152 214 Q156 208 160 214 Q164 208 168 214 Q164 222 160 224 Q156 222 152 214Z" fill="#EC4899"/>`,
+  };
+  return M[style]||M.smile;
+}
+
+/* ── SHIRT ── */
+function shirtSVG(style,c,cd,cl){
+  const base=`M95 290 Q75 285 58 302 L48 335 L74 340 L80 315 L80 420 L240 420 L240 315 L246 340 L272 335 L262 302 Q245 285 225 290`;
+  const collar_v=`Q215 305 160 308 Q105 305 95 290`;
+  switch(style){
+    case 'tee': return `<path d="${base} ${collar_v}Z" fill="${c}"/>
+      <path d="M95 290 ${collar_v.slice(1)}" fill="none" stroke="${cd}" stroke-width="2"/>
+      <path d="M125 308 L160 322 L195 308" fill="none" stroke="${cd}" stroke-width="1.5" opacity="0.2"/>`;
+    case 'collar': return `<path d="${base} ${collar_v}Z" fill="${c}"/>
+      <path d="M120 292 L142 318 L160 304 L178 318 L200 292" fill="${cl}" stroke="${cd}" stroke-width="1.5"/>
+      <line x1="160" y1="304" x2="160" y2="420" stroke="${cd}" stroke-width="1.5" opacity="0.15"/>
+      ${[320,340,360,380,400].map(y=>`<circle cx="160" cy="${y}" r="3" fill="${cd}" opacity="0.3"/>`).join('')}`;
+    case 'hoodie': return `<path d="${base} ${collar_v}Z" fill="${c}"/>
+      <path d="M112 292 Q135 314 160 318 Q185 314 208 292" fill="${cd}"/>
+      <ellipse cx="160" cy="375" rx="28" ry="18" fill="${cd}" opacity="0.7"/>
+      <line x1="132" y1="375" x2="132" y2="392" stroke="${cd}" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+      <line x1="188" y1="375" x2="188" y2="392" stroke="${cd}" stroke-width="3" stroke-linecap="round" opacity="0.5"/>`;
+    case 'button': return `<path d="${base} ${collar_v}Z" fill="${c}"/>
+      <path d="M120 292 L142 318 L160 304 L178 318 L200 292" fill="${cl}" stroke="${cd}" stroke-width="1.5"/>
+      <line x1="160" y1="304" x2="160" y2="420" stroke="${cd}" stroke-width="2"/>
+      <rect x="80" y="318" width="22" height="102" fill="${cd}" opacity="0.1" rx="2"/>
+      <rect x="218" y="318" width="22" height="102" fill="${cd}" opacity="0.1" rx="2"/>`;
+    default: return `<path d="${base} ${collar_v}Z" fill="${c}"/>`;
+  }
+}
+
+/* ── ACCESSORIES ── */
+function accSVG(id){
+  const A={
+    glasses:`<ellipse cx="132" cy="168" rx="24" ry="22" fill="none" stroke="#444" stroke-width="3.5"/>
+      <ellipse cx="188" cy="168" rx="24" ry="22" fill="none" stroke="#444" stroke-width="3.5"/>
+      <path d="M156 168 L164 168" stroke="#444" stroke-width="3.5"/>
+      <path d="M108 164 L92 158" stroke="#444" stroke-width="3"/><path d="M212 164 L228 158" stroke="#444" stroke-width="3"/>`,
+    sunglasses:`<rect x="106" y="153" width="52" height="34" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2.5"/>
+      <rect x="162" y="153" width="52" height="34" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2.5"/>
+      <path d="M158 170 L162 170" stroke="#475569" stroke-width="3.5"/>
+      <path d="M106 167 L90 160" stroke="#475569" stroke-width="3"/><path d="M214 167 L230 160" stroke="#475569" stroke-width="3"/>
+      <rect x="112" y="158" width="40" height="10" rx="4" fill="#3b82f6" opacity="0.15"/>
+      <rect x="168" y="158" width="40" height="10" rx="4" fill="#3b82f6" opacity="0.15"/>`,
+    hat:`<ellipse cx="160" cy="108" rx="80" ry="14" fill="#1e293b"/>
+      <path d="M95 108 Q95 52 160 44 Q225 52 225 108" fill="#1e293b"/>
+      <rect x="95" y="100" width="130" height="10" rx="2" fill="#dc2626"/>`,
+    cap:`<ellipse cx="160" cy="112" rx="74" ry="13" fill="#1e293b"/>
+      <path d="M88 112 Q88 65 160 58 Q232 65 232 112" fill="#1e293b"/>
+      <path d="M88 112 Q55 110 42 122 Q38 128 48 125 Q65 118 88 118" fill="#1e293b"/>
+      <circle cx="160" cy="58" r="5" fill="#1e293b"/>`,
+    crown:`<path d="M102 108 L115 55 L138 92 L160 42 L182 92 L205 55 L218 108Z" fill="#EAB308" stroke="#CA8A04" stroke-width="2"/>
+      <circle cx="160" cy="65" r="5.5" fill="#DC2626"/><circle cx="134" cy="82" r="4" fill="#3B82F6"/><circle cx="186" cy="82" r="4" fill="#22C55E"/>
+      <path d="M102 108 L218 108" stroke="#CA8A04" stroke-width="3"/>`,
+    headband:`<path d="M88 130 Q88 100 160 94 Q232 100 232 130" fill="none" stroke="#EC4899" stroke-width="9"/>
+      <circle cx="205" cy="100" r="13" fill="#EC4899"/><circle cx="216" cy="108" r="10" fill="#F472B6"/><circle cx="198" cy="110" r="8" fill="#FB7185"/>`,
+    earrings:`<line x1="88" y1="178" x2="88" y2="194" stroke="#EAB308" stroke-width="2"/>
+      <circle cx="88" cy="198" r="6.5" fill="#EAB308" stroke="#CA8A04" stroke-width="1.5"/>
+      <line x1="232" y1="178" x2="232" y2="194" stroke="#EAB308" stroke-width="2"/>
+      <circle cx="232" cy="198" r="6.5" fill="#EAB308" stroke="#CA8A04" stroke-width="1.5"/>`,
+    necklace:`<path d="M120 295 Q140 322 160 326 Q180 322 200 295" fill="none" stroke="#EAB308" stroke-width="3"/>
+      <circle cx="160" cy="327" r="8" fill="#EAB308" stroke="#CA8A04" stroke-width="1.5"/>
+      <circle cx="160" cy="327" r="3.5" fill="#DC2626"/>`,
+    star:`<polygon points="258,82 266,104 290,104 271,118 278,140 258,126 238,140 245,118 226,104 250,104" fill="#EAB308" stroke="#CA8A04" stroke-width="1.5"/>`,
+    flower:`<g transform="translate(78,98)"><circle cx="0" cy="-10" r="9" fill="#F472B6"/><circle cx="10" cy="-3" r="9" fill="#FB7185"/>
+      <circle cx="6" cy="8" r="9" fill="#F472B6"/><circle cx="-6" cy="8" r="9" fill="#FB7185"/>
+      <circle cx="-10" cy="-3" r="9" fill="#F472B6"/><circle cx="0" cy="0" r="7" fill="#FBBF24"/></g>`,
+    headphones:`<path d="M84 155 Q84 95 160 88 Q236 95 236 155" fill="none" stroke="#374151" stroke-width="7"/>
+      <rect x="68" y="144" width="22" height="38" rx="9" fill="#374151"/><rect x="73" y="150" width="14" height="26" rx="6" fill="#6B7280"/>
+      <rect x="230" y="144" width="22" height="38" rx="9" fill="#374151"/><rect x="233" y="150" width="14" height="26" rx="6" fill="#6B7280"/>`,
+    mask:`<path d="M110 190 Q118 215 160 220 Q202 215 210 190 L210 206 Q202 228 160 232 Q118 228 110 206Z" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+      <path d="M132 200 L132 212" stroke="#cbd5e1" stroke-width="1" opacity="0.4"/>
+      <path d="M160 202 L160 216" stroke="#cbd5e1" stroke-width="1" opacity="0.4"/>
+      <path d="M188 200 L188 212" stroke="#cbd5e1" stroke-width="1" opacity="0.4"/>
+      <line x1="110" y1="198" x2="90" y2="188" stroke="#cbd5e1" stroke-width="2"/>
+      <line x1="210" y1="198" x2="230" y2="188" stroke="#cbd5e1" stroke-width="2"/>`,
+  };
+  return A[id]||'';
+}
+
+/* ══════════ ACTIONS ══════════ */
+function randomize(){
+  const ri=a=>Math.floor(Math.random()*a.length);
+  const rp=a=>a[ri(a)];
+  S.skin=ri(D.skin);S.hairColor=ri(D.hairColor);S.hairStyle=rp(D.hairStyle).id;
+  S.eyeColor=ri(D.eyeColor);S.mouth=rp(D.mouth).id;S.eyebrows=rp(D.eyebrows).id;
+  S.shirtColor=ri(D.shirtColor);S.shirtStyle=rp(D.shirtStyle).id;S.bg=ri(D.bg);
+  S.acc=new Set();const n=Math.floor(Math.random()*3);
+  for(let i=0;i<n;i++)S.acc.add(rp(D.accessories).id);
+  refresh();
+}
+
+function resetAll(){
+  S={skin:1,hairColor:3,hairStyle:'mid',eyeColor:2,mouth:'smile',eyebrows:'normal',
+     acc:new Set(),shirtColor:5,shirtStyle:'tee',bg:0};
+  document.getElementById('charName').value='';refresh();
+}
+
+function saveImg(){
+  const svg=document.getElementById('character');
+  const name=document.getElementById('charName').value||'character';
+  const bg=D.bg[S.bg].c;
+  const w=640,h2=840;
+  const svgClone=svg.cloneNode(true);
+  svgClone.classList.remove('floating','pop');
+  const data=new XMLSerializer().serializeToString(svgClone);
+
+  const canvas=document.createElement('canvas');
+  canvas.width=w;canvas.height=h2;
+  const ctx=canvas.getContext('2d');
+
+  // Draw gradient bg
+  const grad=ctx.createLinearGradient(0,0,w*0.5,h2);
+  // Parse first color from gradient
+  ctx.fillStyle='#1a1040';ctx.fillRect(0,0,w,h2);
+
+  const img=new Image();
+  img.onload=()=>{
+    ctx.drawImage(img,(w-640)/2,(h2-840)/2,640,840);
+    const link=document.createElement('a');
+    link.download=`${name}.png`;
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  };
+  img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(data)));
+}
+
+/* ══════════ INIT ══════════ */
+document.getElementById('stageBg').style.background=D.bg[S.bg].c;
+buildTabs();buildOpts();render();
+</script>
+</body>
+</html>

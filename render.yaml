@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: bachar-game-lab
+    env: static
+    staticPublishPath: .
+    buildCommand: echo "Static site ready"
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600

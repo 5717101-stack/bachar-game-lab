@@ -3,7 +3,7 @@ services:
     name: bachar-game-lab
     env: static
     staticPublishPath: public
-    buildCommand: mkdir -p public && cp -r games games.json index.html public/
+    buildCommand: mkdir -p public && cp -r games games.json index.html manifest.json sw.js icons public/
     headers:
       - path: /*
         name: Cache-Control

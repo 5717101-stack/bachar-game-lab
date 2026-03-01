@@ -1,5 +1,14 @@
 [
   {
+    "id": "monopoly",
+    "name": "Monopoly New York",
+    "nameHe": "מונופול ניו יורק",
+    "emoji": "🐰",
+    "author": "Adam",
+    "color": "#F5C842",
+    "description": "מונופול עם חיות צבעוניות ורחובות ניו יורק!"
+  },
+  {
     "id": "parkour",
     "name": "Parkour Princess",
     "nameHe": "פארקור נסיכה",

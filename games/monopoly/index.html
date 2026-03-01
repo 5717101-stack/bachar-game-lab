@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>מונופול ניו יורק 🐰</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="מונופול">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a;
+  --surface: rgba(20,26,46,0.85);
+  --glass: rgba(255,255,255,0.04);
+  --glass-border: rgba(255,255,255,0.08);
+  --text: #f0eef6;
+  --dim: rgba(255,255,255,0.45);
+  --gold: #f5c842;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --radius: 16px;
+  --brown: #92603D;
+  --ltblue: #60C5F1;
+  --pink: #E05BB0;
+  --orange: #F59E0B;
+  --red: #EF4444;
+  --yellow: #FACC15;
+  --green: #22C55E;
+  --dkblue: #3B5DC9;
+  --railroad: #555;
+  --utility: #888;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;touch-action:manipulation}
+body{font-family:'Rubik',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+/* ── SETUP SCREEN ── */
+#setup{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow-y:auto}
+#setup.hidden{display:none}
+.setup-inner{width:100%;max-width:460px;padding:32px 20px;text-align:center}
+.setup-mascot{font-size:4.5em;animation:mascotBounce 2s ease-in-out infinite}
+@keyframes mascotBounce{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-12px) rotate(-5deg)}}
+.setup-title{font-size:2em;font-weight:900;background:linear-gradient(135deg,var(--gold),#fb923c,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:8px 0 4px}
+.setup-sub{color:var(--dim);font-size:1em;margin-bottom:28px}
+.section-label{font-size:.9em;font-weight:700;color:var(--dim);margin-bottom:10px;text-align:start}
+.player-count{display:flex;gap:8px;justify-content:center;margin-bottom:24px}
+.pc-btn{width:48px;height:48px;border-radius:14px;border:2px solid var(--glass-border);background:var(--glass);color:var(--text);font-size:1.2em;font-weight:800;cursor:pointer;transition:.2s}
+.pc-btn.active{border-color:var(--gold);background:rgba(245,200,66,0.15);color:var(--gold);box-shadow:0 0 20px rgba(245,200,66,0.15)}
+.players-list{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.player-row{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--glass-border);border-radius:14px;padding:10px 12px}
+.player-row .num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:800;flex-shrink:0}
+.player-row input{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:inherit;font-size:.95em;outline:none}
+.player-row input::placeholder{color:var(--dim)}
+.animal-pick{display:flex;gap:4px;flex-shrink:0}
+.animal-btn{width:36px;height:36px;border-radius:10px;border:2px solid transparent;background:var(--glass);font-size:1.2em;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center}
+.animal-btn.active{border-color:var(--gold);background:rgba(245,200,66,0.12)}
+.animal-btn.taken{opacity:.25;pointer-events:none}
+.start-btn{width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--gold),#fb923c);color:#1a0e00;font-family:inherit;font-size:1.15em;font-weight:800;cursor:pointer;transition:.3s;box-shadow:0 4px 24px rgba(245,200,66,0.25)}
+.start-btn:active{transform:scale(.97)}
+
+/* ── GAME SCREEN ── */
+#game{display:none;flex:1;flex-direction:column;overflow:hidden}
+#game.active{display:flex}
+.game-top{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px}
+.board-wrap{position:relative;aspect-ratio:1;max-width:min(95vw,95vh - 180px);max-height:min(95vw,calc(95vh - 180px));width:100%}
+.board{display:grid;grid-template-columns:1.6fr repeat(9,1fr) 1.6fr;grid-template-rows:1.6fr repeat(9,1fr) 1.6fr;width:100%;height:100%;border-radius:12px;overflow:hidden;border:2px solid var(--glass-border);background:#0d1220}
+.cell{position:relative;border:.5px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;font-size:clamp(5px,1vw,9px);cursor:pointer;transition:background .15s}
+.cell:hover{background:rgba(255,255,255,0.06)}
+.cell .color-bar{position:absolute;width:100%;height:30%}
+.cell.side-bottom .color-bar{top:0}
+.cell.side-top .color-bar{bottom:0}
+.cell.side-left .color-bar{right:0;width:30%;height:100%;top:0}
+.cell.side-right .color-bar{left:0;width:30%;height:100%;top:0}
+.cell .cell-name{position:relative;z-index:1;font-weight:600;line-height:1.1;text-align:center;padding:1px;word-break:break-word;opacity:.85}
+.cell .cell-price{font-size:.85em;color:var(--gold);font-weight:700;opacity:.8}
+.cell .tokens{position:absolute;bottom:2px;display:flex;gap:1px;font-size:clamp(8px,1.4vw,14px);z-index:2}
+.cell.corner{font-size:clamp(7px,1.2vw,11px);font-weight:800}
+.cell .houses{position:absolute;display:flex;gap:1px;z-index:1;font-size:clamp(5px,.8vw,8px)}
+.cell.side-bottom .houses{top:1px;left:50%;transform:translateX(-50%)}
+.cell.side-top .houses{bottom:1px;left:50%;transform:translateX(-50%)}
+.cell.side-left .houses{right:1px;top:50%;transform:translateY(-50%);flex-direction:column}
+.cell.side-right .houses{left:1px;top:50%;transform:translateY(-50%);flex-direction:column}
+.board-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;z-index:0}
+.board-center .bc-rabbit{font-size:clamp(20px,5vw,48px)}
+.board-center .bc-title{font-size:clamp(8px,2vw,18px);font-weight:900;color:var(--gold);opacity:.7}
+
+/* ── BOTTOM PANEL ── */
+.panel{background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--glass-border);padding:10px 12px env(safe-area-inset-bottom);max-height:52vh;overflow-y:auto}
+.panel-current{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.panel-avatar{font-size:2em}
+.panel-info{flex:1;min-width:0}
+.panel-name{font-weight:800;font-size:1.05em}
+.panel-money{color:var(--gold);font-weight:700;font-size:.95em}
+.panel-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.btn{padding:10px 18px;border:none;border-radius:12px;font-family:inherit;font-size:.9em;font-weight:700;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn:active{transform:scale(.95)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#fb923c);color:#1a0e00}
+.btn-outline{background:var(--glass);border:1px solid var(--glass-border);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171}
+.btn-success{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#4ade80}
+.btn:disabled{opacity:.35;pointer-events:none}
+.players-bar{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.pbar-item{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);font-size:.8em;white-space:nowrap;flex-shrink:0}
+.pbar-item.current{border-color:var(--gold);box-shadow:0 0 12px rgba(245,200,66,0.15)}
+.pbar-item.bankrupt{opacity:.3;text-decoration:line-through}
+.pbar-emoji{font-size:1.3em}
+.pbar-money{color:var(--gold);font-weight:700}
+
+/* ── DICE ── */
+.dice-area{display:flex;gap:12px;align-items:center;justify-content:center;margin:4px 0}
+.die{width:42px;height:42px;background:white;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.5em;font-weight:900;color:#1a1a2e;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.3s}
+.die.rolling{animation:diceShake .4s ease-in-out}
+@keyframes diceShake{0%{transform:rotate(0) scale(1)}25%{transform:rotate(15deg) scale(1.1)}50%{transform:rotate(-15deg) scale(1.1)}75%{transform:rotate(10deg) scale(1.05)}100%{transform:rotate(0) scale(1)}}
+.dice-total{font-weight:800;font-size:1.1em;color:var(--gold);min-width:30px;text-align:center}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:.25s}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal{background:linear-gradient(145deg,#141a2e,#0d1220);border:1px solid var(--glass-border);border-radius:20px;padding:24px;max-width:380px;width:100%;max-height:80vh;overflow-y:auto;transform:translateY(20px) scale(.95);transition:.3s}
+.modal-overlay.show .modal{transform:translateY(0) scale(1)}
+.modal-emoji{font-size:3em;text-align:center;margin-bottom:8px}
+.modal-title{font-size:1.3em;font-weight:800;text-align:center;margin-bottom:4px}
+.modal-text{color:var(--dim);text-align:center;font-size:.95em;line-height:1.5;margin-bottom:16px}
+.modal-prop-color{height:8px;border-radius:4px;margin-bottom:12px}
+.modal-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.modal-actions .btn{flex:1;justify-content:center;min-width:120px}
+.prop-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:12px;margin-bottom:12px}
+.prop-card .pc-row{display:flex;justify-content:space-between;font-size:.85em;padding:2px 0}
+.prop-card .pc-row span:last-child{color:var(--gold);font-weight:600}
+
+/* ── BUILD MODAL ── */
+.build-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.build-row{display:flex;align-items:center;gap:8px;background:var(--glass);border-radius:10px;padding:8px 10px}
+.build-row .br-color{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.build-row .br-name{flex:1;font-size:.85em;font-weight:600}
+.build-row .br-houses{font-size:.85em;color:var(--gold)}
+.build-row .br-btns{display:flex;gap:4px}
+.build-row .br-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-size:1em;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.build-row .br-btn:disabled{opacity:.25}
+
+/* ── GAME LOG ── */
+.log-area{max-height:80px;overflow-y:auto;padding:4px 0}
+.log-line{font-size:.75em;color:var(--dim);padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+
+/* ── WINNER ── */
+.winner-screen{position:fixed;inset:0;z-index:300;background:rgba(10,14,26,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.winner-screen.hidden{display:none}
+.winner-emoji{font-size:5em;animation:mascotBounce 1.5s ease-in-out infinite}
+.winner-title{font-size:2.5em;font-weight:900;background:linear-gradient(135deg,var(--gold),#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0}
+.winner-sub{color:var(--dim);font-size:1.1em;margin-bottom:24px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:500px){
+  .board-wrap{max-width:98vw;max-height:calc(55vh)}
+  .cell{font-size:clamp(4px,.9vw,7px)}
+  .panel{padding:8px 8px env(safe-area-inset-bottom)}
+  .die{width:36px;height:36px;font-size:1.2em}
+}
+@media(min-width:768px){
+  #game{flex-direction:row}
+  .game-top{flex:1}
+  .panel{max-height:100vh;width:320px;border-top:none;border-right:1px solid var(--glass-border)}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-inner">
+    <div class="setup-mascot">🐰</div>
+    <h1 class="setup-title">מונופול ניו יורק</h1>
+    <p class="setup-sub">המשחק של משפחת בכר-ישראלי</p>
+
+    <p class="section-label">כמה שחקנים?</p>
+    <div class="player-count" id="pcBtns"></div>
+
+    <p class="section-label">שחקנים</p>
+    <div class="players-list" id="playersList"></div>
+
+    <button class="start-btn" id="startBtn" onclick="startGame()">🎲 התחילו לשחק!</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div class="game-top">
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+      <div class="board-center"><div class="bc-rabbit">🐰</div><div class="bc-title">ניו יורק</div></div>
+    </div>
+  </div>
+  <div class="panel" id="panel">
+    <div class="panel-current" id="panelCurrent"></div>
+    <div class="dice-area" id="diceArea"></div>
+    <div class="panel-actions" id="panelActions"></div>
+    <div class="players-bar" id="playersBar"></div>
+    <div class="log-area" id="logArea"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- WINNER -->
+<div class="winner-screen hidden" id="winScreen">
+  <div class="winner-emoji" id="winEmoji"></div>
+  <h1 class="winner-title" id="winTitle"></h1>
+  <p class="winner-sub" id="winSub"></p>
+  <button class="btn btn-gold" onclick="location.reload()">🔄 משחק חדש</button>
+  <br><br>
+  <a href="../../" class="btn btn-outline" style="text-decoration:none">🏠 חזרה לפורטל</a>
+</div>
+
+<a href="../../" style="position:fixed;top:8px;left:8px;z-index:50;background:rgba(0,0,0,.5);color:#fff;text-decoration:none;padding:5px 12px;border-radius:10px;font-family:sans-serif;font-size:.8em;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">🏠</a>
+
+<script>
+/* ═══════════════════════════════════════
+   GAME DATA
+   ═══════════════════════════════════════ */
+const ANIMALS = [
+  {id:'rabbit', emoji:'🐰', name:'ארנב', color:'#92603D'},
+  {id:'fox',    emoji:'🦊', name:'שועל', color:'#F59E0B'},
+  {id:'cat',    emoji:'🐱', name:'חתול', color:'#A78BFA'},
+  {id:'dog',    emoji:'🐶', name:'כלב',  color:'#60A5FA'},
+  {id:'owl',    emoji:'🦉', name:'ינשוף',color:'#22C55E'},
+  {id:'penguin',emoji:'🐧', name:'פינגווין',color:'#F472B6'},
+];
+
+const GROUPS = {
+  brown:   {color:'var(--brown)',  house:50},
+  ltblue:  {color:'var(--ltblue)', house:50},
+  pink:    {color:'var(--pink)',   house:100},
+  orange:  {color:'var(--orange)', house:100},
+  red:     {color:'var(--red)',    house:150},
+  yellow:  {color:'var(--yellow)', house:150},
+  green:   {color:'var(--green)',  house:200},
+  dkblue:  {color:'var(--dkblue)', house:200},
+};
+
+const SPACES = [
+  {type:'corner',name:'לך!',     emoji:'➡️'},
+  {type:'prop', name:'קנאל סטריט',    group:'brown', price:60,  rent:[2,10,30,90,160,250]},
+  {type:'chest',name:'קופה',     emoji:'📦'},
+  {type:'prop', name:'באוורי',         group:'brown', price:60,  rent:[4,20,60,180,320,450]},
+  {type:'tax',  name:'מס הכנסה',  amount:200,emoji:'💸'},
+  {type:'rail', name:'גרנד סנטרל',    price:200,emoji:'🚇'},
+  {type:'prop', name:'בליקר סטריט',   group:'ltblue',price:100, rent:[6,30,90,270,400,550]},
+  {type:'chance',name:'הזדמנות',  emoji:'❓'},
+  {type:'prop', name:'יוסטון סטריט',  group:'ltblue',price:100, rent:[6,30,90,270,400,550]},
+  {type:'prop', name:'ברודווי',        group:'ltblue',price:120, rent:[8,40,100,300,450,600]},
+  {type:'corner',name:'כלא',     emoji:'🔒'},
+  {type:'prop', name:'שדרת 5',        group:'pink',  price:140, rent:[10,50,150,450,625,750]},
+  {type:'util', name:'חשמל',     price:150,emoji:'💡'},
+  {type:'prop', name:'מדיסון אבניו',  group:'pink',  price:140, rent:[10,50,150,450,625,750]},
+  {type:'prop', name:'פארק אבניו',    group:'pink',  price:160, rent:[12,60,180,500,700,900]},
+  {type:'rail', name:'פן סטיישן',     price:200,emoji:'🚇'},
+  {type:'prop', name:'טיימס סקוור',   group:'orange',price:180, rent:[14,70,200,550,750,950]},
+  {type:'chest',name:'קופה',     emoji:'📦'},
+  {type:'prop', name:'רחוב 42',       group:'orange',price:180, rent:[14,70,200,550,750,950]},
+  {type:'prop', name:'הראלד סקוור',   group:'orange',price:200, rent:[16,80,220,600,800,1000]},
+  {type:'corner',name:'חנייה חינם',emoji:'🅿️'},
+  {type:'prop', name:'וול סטריט',     group:'red',   price:220, rent:[18,90,250,700,875,1050]},
+  {type:'chance',name:'הזדמנות',  emoji:'❓'},
+  {type:'prop', name:'פולטון סטריט',  group:'red',   price:220, rent:[18,90,250,700,875,1050]},
+  {type:'prop', name:'בטרי פארק',     group:'red',   price:240, rent:[20,100,300,750,925,1100]},
+  {type:'rail', name:'אטלנטיק טרמינל',price:200,emoji:'🚇'},
+  {type:'prop', name:'סנטרל פארק',    group:'yellow',price:260, rent:[22,110,330,800,975,1150]},
+  {type:'prop', name:'קולומבוס סירקל',group:'yellow',price:260, rent:[22,110,330,800,975,1150]},
+  {type:'util', name:'מים',      price:150,emoji:'💧'},
+  {type:'prop', name:'לינקולן סנטר',  group:'yellow',price:280, rent:[24,120,360,850,1025,1200]},
+  {type:'corner',name:'לך לכלא!',emoji:'🚔'},
+  {type:'prop', name:'אפר איסט סייד', group:'green', price:300, rent:[26,130,390,900,1100,1275]},
+  {type:'prop', name:'לקסינגטון אבניו',group:'green',price:300, rent:[26,130,390,900,1100,1275]},
+  {type:'chest',name:'קופה',     emoji:'📦'},
+  {type:'prop', name:'שדרת 3',        group:'green', price:320, rent:[28,150,450,1000,1200,1400]},
+  {type:'rail', name:'פולטון סנטר',   price:200,emoji:'🚇'},
+  {type:'chance',name:'הזדמנות',  emoji:'❓'},
+  {type:'prop', name:'אמפייר סטייט',  group:'dkblue',price:350, rent:[35,175,500,1100,1300,1500]},
+  {type:'tax',  name:'מס יוקרה',  amount:100,emoji:'💎'},
+  {type:'prop', name:'פסל החירות',     group:'dkblue',price:400, rent:[50,200,600,1400,1700,2000]},
+];
+
+const CHANCE_CARDS = [
+  {text:'התקדם ל"לך!" — קבל 200₪', action:p=>{moveToSpace(p,0,true)}},
+  {text:'לך לכלא! לא עוברים ב"לך!"', action:p=>{goToJail(p)}},
+  {text:'התקדם לטיימס סקוור', action:p=>{moveToSpace(p,16,true)}},
+  {text:'התקדם לשדרת 5', action:p=>{moveToSpace(p,11,true)}},
+  {text:'חזור 3 צעדים אחורה', action:p=>{moveBy(p,-3)}},
+  {text:'תיקון ביתך: שלם 25₪ לכל בית שברשותך', action:p=>{let c=countBuildings(p);pay(p,c.houses*25+c.hotels*100)}},
+  {text:'קיבלת דיבידנד מהבנק — 50₪', action:p=>{earn(p,50)}},
+  {text:'שלם מס בית ספר — 150₪', action:p=>{pay(p,150)}},
+  {text:'זכית בתחרות — 100₪', action:p=>{earn(p,100)}},
+  {text:'קנס חנייה — 15₪', action:p=>{pay(p,15)}},
+];
+
+const CHEST_CARDS = [
+  {text:'התקדם ל"לך!" — קבל 200₪', action:p=>{moveToSpace(p,0,true)}},
+  {text:'טעות בבנק לטובתך — 200₪', action:p=>{earn(p,200)}},
+  {text:'שלם לרופא — 50₪', action:p=>{pay(p,50)}},
+  {text:'מכירת מניות — קבל 50₪', action:p=>{earn(p,50)}},
+  {text:'לך לכלא!', action:p=>{goToJail(p)}},
+  {text:'יום הולדת שמח! קבל 10₪ מכל שחקן', action:p=>{G.players.forEach(o=>{if(o!==p&&!o.bankrupt){o.money-=10;p.money+=10}});updateUI()}},
+  {text:'ביטוח חיים — קבל 100₪', action:p=>{earn(p,100)}},
+  {text:'שלם שכר לימוד — 50₪', action:p=>{pay(p,50)}},
+  {text:'קבל ייעוץ — 25₪', action:p=>{earn(p,25)}},
+  {text:'ירושה מדוד רחוק — 150₪', action:p=>{earn(p,150)}},
+];
+
+/* ═══════════════════════════════════════
+   GAME STATE
+   ═══════════════════════════════════════ */
+let G = {
+  players: [],
+  currentIdx: 0,
+  spaces: [],
+  phase: 'setup',
+  doublesCount: 0,
+  diceValues: [0,0],
+  rolled: false,
+  turnActions: 0,
+};
+
+function currentPlayer(){ return G.players[G.currentIdx]; }
+
+/* ═══════════════════════════════════════
+   SETUP
+   ═══════════════════════════════════════ */
+let setupCount = 2;
+let setupPlayers = [];
+
+function initSetup(){
+  const pcDiv = document.getElementById('pcBtns');
+  for(let n=2;n<=6;n++){
+    const b = document.createElement('button');
+    b.className = 'pc-btn' + (n===2?' active':'');
+    b.textContent = n;
+    b.onclick = ()=>{
+      setupCount = n;
+      pcDiv.querySelectorAll('.pc-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      buildPlayerRows();
+    };
+    pcDiv.appendChild(b);
+  }
+  buildPlayerRows();
+}
+
+function buildPlayerRows(){
+  setupPlayers = [];
+  for(let i=0;i<setupCount;i++){
+    setupPlayers.push({name:'', animalIdx: i < ANIMALS.length ? i : 0});
+  }
+  renderPlayerRows();
+}
+
+function renderPlayerRows(){
+  const list = document.getElementById('playersList');
+  const colors = ['#EF4444','#3B82F6','#22C55E','#F59E0B','#A78BFA','#F472B6'];
+  list.innerHTML = '';
+  setupPlayers.forEach((sp,i)=>{
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    const taken = setupPlayers.map((s,j)=>j!==i?s.animalIdx:-1).filter(x=>x>=0);
+    row.innerHTML = `
+      <div class="num" style="background:${colors[i]}">${i+1}</div>
+      <input placeholder="שחקן ${i+1}" value="${sp.name}" data-idx="${i}">
+      <div class="animal-pick">
+        ${ANIMALS.map((a,ai)=>`<button class="animal-btn${ai===sp.animalIdx?' active':''}${taken.includes(ai)?' taken':''}" data-pi="${i}" data-ai="${ai}">${a.emoji}</button>`).join('')}
+      </div>`;
+    row.querySelector('input').addEventListener('input',e=>{setupPlayers[i].name=e.target.value});
+    row.querySelectorAll('.animal-btn').forEach(b=>{
+      b.addEventListener('click',()=>{
+        setupPlayers[i].animalIdx = parseInt(b.dataset.ai);
+        renderPlayerRows();
+      });
+    });
+    list.appendChild(row);
+  });
+}
+
+function startGame(){
+  G.players = setupPlayers.map((sp,i)=>{
+    const a = ANIMALS[sp.animalIdx];
+    return {
+      idx: i,
+      name: sp.name || `שחקן ${i+1}`,
+      animal: a,
+      money: 400,
+      pos: 0,
+      props: [],
+      inJail: false,
+      jailTurns: 0,
+      bankrupt: false,
+    };
+  });
+  G.spaces = SPACES.map(s=>({...s, owner:null, houses:0}));
+  G.currentIdx = 0;
+  G.phase = 'play';
+  G.doublesCount = 0;
+  G.rolled = false;
+  shuffleArray(CHANCE_CARDS);
+  shuffleArray(CHEST_CARDS);
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('game').classList.add('active');
+  renderBoard();
+  updateUI();
+  addLog(`🎲 המשחק התחיל! תור של ${currentPlayer().name}`);
+}
+
+/* ═══════════════════════════════════════
+   BOARD RENDERING
+   ═══════════════════════════════════════ */
+function posToGrid(pos){
+  if(pos<=10) return {r:11, c:11-pos};
+  if(pos<=20) return {r:11-(pos-10), c:1};
+  if(pos<=30) return {r:1, c:pos-20+1};
+  return {r:pos-30+1, c:11};
+}
+
+function getSide(pos){
+  if(pos>=1&&pos<=9) return 'side-bottom';
+  if(pos>=11&&pos<=19) return 'side-left';
+  if(pos>=21&&pos<=29) return 'side-top';
+  if(pos>=31&&pos<=39) return 'side-right';
+  return 'corner';
+}
+
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const cellMap = {};
+  G.spaces.forEach((sp,i)=>{
+    const g = posToGrid(i);
+    const cell = document.createElement('div');
+    cell.className = `cell ${getSide(i)}`;
+    cell.style.gridRow = g.r;
+    cell.style.gridColumn = g.c;
+    cell.dataset.pos = i;
+
+    if(sp.type==='prop' && sp.group){
+      const bar = document.createElement('div');
+      bar.className = 'color-bar';
+      bar.style.background = GROUPS[sp.group].color;
+      cell.appendChild(bar);
+    }
+
+    const nm = document.createElement('div');
+    nm.className = 'cell-name';
+    if(sp.type==='corner'||sp.type==='tax'||sp.type==='chance'||sp.type==='chest'){
+      nm.textContent = sp.emoji||'';
+      const nm2 = document.createElement('div');
+      nm2.className = 'cell-name';
+      nm2.textContent = sp.name;
+      cell.appendChild(nm);
+      cell.appendChild(nm2);
+    } else {
+      nm.textContent = sp.name;
+      cell.appendChild(nm);
+      if(sp.price){
+        const pr = document.createElement('div');
+        pr.className = 'cell-price';
+        pr.textContent = sp.price+'₪';
+        cell.appendChild(pr);
+      }
+    }
+
+    const hDiv = document.createElement('div');
+    hDiv.className = 'houses';
+    cell.appendChild(hDiv);
+
+    const tDiv = document.createElement('div');
+    tDiv.className = 'tokens';
+    cell.appendChild(tDiv);
+
+    cell.addEventListener('click',()=>showSpaceInfo(i));
+    board.appendChild(cell);
+    cellMap[i] = cell;
+  });
+
+  const center = document.createElement('div');
+  center.style.cssText = 'grid-row:2/11;grid-column:2/11';
+  board.appendChild(center);
+
+  G._cellMap = cellMap;
+  updateTokens();
+}
+
+function updateTokens(){
+  if(!G._cellMap) return;
+  Object.values(G._cellMap).forEach(cell=>{
+    const tDiv = cell.querySelector('.tokens');
+    const hDiv = cell.querySelector('.houses');
+    if(tDiv) tDiv.innerHTML = '';
+    if(hDiv) hDiv.innerHTML = '';
+  });
+  G.players.forEach(p=>{
+    if(p.bankrupt) return;
+    const cell = G._cellMap[p.pos];
+    if(cell){
+      const tDiv = cell.querySelector('.tokens');
+      const span = document.createElement('span');
+      span.textContent = p.animal.emoji;
+      span.title = p.name;
+      tDiv.appendChild(span);
+    }
+  });
+  G.spaces.forEach((sp,i)=>{
+    if(sp.houses > 0){
+      const cell = G._cellMap[i];
+      const hDiv = cell.querySelector('.houses');
+      if(sp.houses === 5){
+        hDiv.textContent = '🏨';
+      } else {
+        hDiv.textContent = '🏠'.repeat(sp.houses);
+      }
+    }
+  });
+  Object.entries(G._cellMap).forEach(([pos,cell])=>{
+    const sp = G.spaces[pos];
+    if(sp.owner !== null){
+      cell.style.boxShadow = `inset 0 0 8px ${G.players[sp.owner].animal.color}33`;
+    } else {
+      cell.style.boxShadow = '';
+    }
+  });
+}
+
+/* ═══════════════════════════════════════
+   UI UPDATES
+   ═══════════════════════════════════════ */
+function updateUI(){
+  const p = currentPlayer();
+  document.getElementById('panelCurrent').innerHTML = `
+    <div class="panel-avatar">${p.animal.emoji}</div>
+    <div class="panel-info">
+      <div class="panel-name">${p.name}</div>
+      <div class="panel-money">💰 ${p.money}₪</div>
+    </div>`;
+
+  const diceArea = document.getElementById('diceArea');
+  diceArea.innerHTML = `
+    <div class="die" id="die1">${G.diceValues[0]||'?'}</div>
+    <div class="die" id="die2">${G.diceValues[1]||'?'}</div>
+    ${G.rolled?`<div class="dice-total">${G.diceValues[0]+G.diceValues[1]}</div>`:''}`;
+
+  const acts = document.getElementById('panelActions');
+  let btns = '';
+  if(!G.rolled && !p.inJail){
+    btns += `<button class="btn btn-gold" onclick="rollDice()">🎲 הטל קוביות</button>`;
+  }
+  if(p.inJail && !G.rolled){
+    btns += `<button class="btn btn-gold" onclick="rollDice()">🎲 נסה דאבל</button>`;
+    if(p.money >= 50){
+      btns += `<button class="btn btn-outline" onclick="payJailFine()">💰 שלם 50₪</button>`;
+    }
+  }
+  if(G.rolled){
+    if(canBuild(p)){
+      btns += `<button class="btn btn-success" onclick="showBuildModal()">🏠 בנה</button>`;
+    }
+    btns += `<button class="btn btn-outline" onclick="endTurn()">⏭ סיים תור</button>`;
+  }
+  acts.innerHTML = btns;
+
+  const bar = document.getElementById('playersBar');
+  bar.innerHTML = G.players.map((pl,i)=>`
+    <div class="pbar-item${i===G.currentIdx?' current':''}${pl.bankrupt?' bankrupt':''}">
+      <span class="pbar-emoji">${pl.animal.emoji}</span>
+      <span>${pl.name}</span>
+      <span class="pbar-money">${pl.bankrupt?'פשט רגל':pl.money+'₪'}</span>
+    </div>`).join('');
+
+  updateTokens();
+}
+
+function addLog(msg){
+  const area = document.getElementById('logArea');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.textContent = msg;
+  area.prepend(line);
+  if(area.children.length > 50) area.lastChild.remove();
+}
+
+/* ═══════════════════════════════════════
+   DICE & MOVEMENT
+   ═══════════════════════════════════════ */
+function rollDice(){
+  if(G.rolled) return;
+  const d1 = Math.ceil(Math.random()*6);
+  const d2 = Math.ceil(Math.random()*6);
+  G.diceValues = [d1,d2];
+  const isDouble = d1===d2;
+
+  const die1El = document.getElementById('die1');
+  const die2El = document.getElementById('die2');
+  if(die1El) die1El.classList.add('rolling');
+  if(die2El) die2El.classList.add('rolling');
+
+  setTimeout(()=>{
+    G.diceValues = [d1,d2];
+    const p = currentPlayer();
+    addLog(`${p.animal.emoji} ${p.name} הטיל ${d1}+${d2}=${d1+d2}${isDouble?' (דאבל!)':''}`);
+
+    if(p.inJail){
+      handleJailRoll(p, d1, d2, isDouble);
+    } else {
+      if(isDouble){
+        G.doublesCount++;
+        if(G.doublesCount >= 3){
+          addLog(`${p.name} הטיל דאבל 3 פעמים — לכלא!`);
+          goToJail(p);
+          G.rolled = true;
+          updateUI();
+          return;
+        }
+      }
+      G.rolled = !isDouble;
+      moveBy(p, d1+d2);
+    }
+  }, 450);
+
+  updateUI();
+}
+
+function handleJailRoll(p, d1, d2, isDouble){
+  if(isDouble){
+    p.inJail = false;
+    p.jailTurns = 0;
+    addLog(`${p.name} הטיל דאבל ויצא מהכלא!`);
+    G.rolled = true;
+    moveBy(p, d1+d2);
+  } else {
+    p.jailTurns++;
+    if(p.jailTurns >= 3){
+      addLog(`${p.name} לא הצליח — משלם 50₪ ויוצא`);
+      pay(p, 50);
+      p.inJail = false;
+      p.jailTurns = 0;
+      G.rolled = true;
+      moveBy(p, d1+d2);
+    } else {
+      addLog(`${p.name} נשאר בכלא (ניסיון ${p.jailTurns}/3)`);
+      G.rolled = true;
+      updateUI();
+    }
+  }
+}
+
+function payJailFine(){
+  const p = currentPlayer();
+  pay(p, 50);
+  p.inJail = false;
+  p.jailTurns = 0;
+  addLog(`${p.name} שילם 50₪ ויצא מהכלא`);
+  updateUI();
+}
+
+function moveBy(p, steps){
+  const oldPos = p.pos;
+  const newPos = (p.pos + steps + 40) % 40;
+  if(steps > 0 && newPos < oldPos){
+    earn(p, 200);
+    addLog(`${p.name} עבר דרך "לך!" — קיבל 200₪`);
+  }
+  p.pos = newPos;
+  updateTokens();
+  setTimeout(()=>landOnSpace(p), 200);
+}
+
+function moveToSpace(p, target, collectGo){
+  if(collectGo && target <= p.pos && target !== p.pos){
+    earn(p, 200);
+    addLog(`${p.name} עבר דרך "לך!" — קיבל 200₪`);
+  }
+  p.pos = target;
+  updateTokens();
+  setTimeout(()=>landOnSpace(p), 200);
+}
+
+function goToJail(p){
+  p.pos = 10;
+  p.inJail = true;
+  p.jailTurns = 0;
+  G.rolled = true;
+  addLog(`${p.name} נשלח לכלא!`);
+  updateTokens();
+  updateUI();
+}
+
+/* ═══════════════════════════════════════
+   LANDING LOGIC
+   ═══════════════════════════════════════ */
+function landOnSpace(p){
+  const sp = G.spaces[p.pos];
+  switch(sp.type){
+    case 'prop':
+      if(sp.owner === null) showBuyModal(p, p.pos);
+      else if(sp.owner !== p.idx && !G.players[sp.owner].bankrupt) chargeRent(p, p.pos);
+      else updateUI();
+      break;
+    case 'rail':
+      if(sp.owner === null) showBuyModal(p, p.pos);
+      else if(sp.owner !== p.idx && !G.players[sp.owner].bankrupt) chargeRailRent(p, p.pos);
+      else updateUI();
+      break;
+    case 'util':
+      if(sp.owner === null) showBuyModal(p, p.pos);
+      else if(sp.owner !== p.idx && !G.players[sp.owner].bankrupt) chargeUtilRent(p, p.pos);
+      else updateUI();
+      break;
+    case 'tax':
+      addLog(`${p.name} משלם ${sp.name}: ${sp.amount}₪`);
+      pay(p, sp.amount);
+      updateUI();
+      break;
+    case 'chance':
+      drawCard(p, CHANCE_CARDS, 'הזדמנות', '❓');
+      break;
+    case 'chest':
+      drawCard(p, CHEST_CARDS, 'קופה קהילתית', '📦');
+      break;
+    case 'corner':
+      if(p.pos === 30){
+        goToJail(p);
+      } else {
+        updateUI();
+      }
+      break;
+    default:
+      updateUI();
+  }
+}
+
+/* ═══════════════════════════════════════
+   PROPERTY / RENT
+   ═══════════════════════════════════════ */
+function chargeRent(p, pos){
+  const sp = G.spaces[pos];
+  const owner = G.players[sp.owner];
+  let rentIdx = sp.houses;
+  let rent = sp.rent[rentIdx];
+  if(sp.houses === 0 && ownsFullGroup(sp.owner, sp.group)){
+    rent *= 2;
+  }
+  addLog(`${p.name} משלם ${rent}₪ שכירות ל${owner.name} (${sp.name})`);
+  transfer(p, owner, rent);
+  updateUI();
+}
+
+function chargeRailRent(p, pos){
+  const sp = G.spaces[pos];
+  const owner = G.players[sp.owner];
+  const railCount = G.spaces.filter(s=>s.type==='rail'&&s.owner===sp.owner).length;
+  const rent = 25 * Math.pow(2, railCount-1);
+  addLog(`${p.name} משלם ${rent}₪ ל${owner.name} (${sp.name})`);
+  transfer(p, owner, rent);
+  updateUI();
+}
+
+function chargeUtilRent(p, pos){
+  const sp = G.spaces[pos];
+  const owner = G.players[sp.owner];
+  const utilCount = G.spaces.filter(s=>s.type==='util'&&s.owner===sp.owner).length;
+  const mult = utilCount >= 2 ? 10 : 4;
+  const total = G.diceValues[0]+G.diceValues[1];
+  const rent = mult * total;
+  addLog(`${p.name} משלם ${rent}₪ ל${owner.name} (${sp.name}, ${mult}×${total})`);
+  transfer(p, owner, rent);
+  updateUI();
+}
+
+function ownsFullGroup(playerIdx, group){
+  const groupProps = G.spaces.filter(s=>s.group===group);
+  return groupProps.every(s=>s.owner===playerIdx);
+}
+
+/* ═══════════════════════════════════════
+   MONEY
+   ═══════════════════════════════════════ */
+function earn(p, amount){
+  p.money += amount;
+  addLog(`${p.name} קיבל ${amount}₪`);
+  updateUI();
+}
+
+function pay(p, amount){
+  p.money -= amount;
+  if(p.money < 0) goBankrupt(p);
+  updateUI();
+}
+
+function transfer(from, to, amount){
+  from.money -= amount;
+  to.money += amount;
+  if(from.money < 0) goBankrupt(from);
+  updateUI();
+}
+
+function goBankrupt(p){
+  p.bankrupt = true;
+  p.money = 0;
+  G.spaces.forEach(sp=>{if(sp.owner===p.idx){sp.owner=null;sp.houses=0}});
+  addLog(`💀 ${p.name} פשט רגל!`);
+  checkWinner();
+}
+
+function checkWinner(){
+  const alive = G.players.filter(p=>!p.bankrupt);
+  if(alive.length === 1){
+    const w = alive[0];
+    setTimeout(()=>{
+      document.getElementById('winEmoji').textContent = w.animal.emoji;
+      document.getElementById('winTitle').textContent = `${w.name} ניצח!`;
+      const totalWealth = w.money + w.props.reduce((s,i)=>s+(G.spaces[i].price||0),0);
+      document.getElementById('winSub').textContent = `סה"כ הון: ${totalWealth}₪`;
+      document.getElementById('winScreen').classList.remove('hidden');
+    }, 500);
+  }
+}
+
+/* ═══════════════════════════════════════
+   CARDS
+   ═══════════════════════════════════════ */
+let chanceIdx = 0, chestIdx = 0;
+
+function drawCard(p, deck, title, emoji){
+  const idx = deck === CHANCE_CARDS ? chanceIdx : chestIdx;
+  const card = deck[idx % deck.length];
+  if(deck === CHANCE_CARDS) chanceIdx++; else chestIdx++;
+  showModal(`
+    <div class="modal-emoji">${emoji}</div>
+    <div class="modal-title">${title}</div>
+    <div class="modal-text">${card.text}</div>
+    <div class="modal-actions">
+      <button class="btn btn-gold" onclick="closeModal();PENDING_CARD_ACTION()">אישור</button>
+    </div>`);
+  window.PENDING_CARD_ACTION = ()=>{
+    card.action(p);
+    updateUI();
+  };
+}
+
+/* ═══════════════════════════════════════
+   BUILDING
+   ═══════════════════════════════════════ */
+function canBuild(p){
+  const groups = {};
+  p.props.forEach(i=>{
+    const sp = G.spaces[i];
+    if(sp.group){
+      if(!groups[sp.group]) groups[sp.group] = [];
+      groups[sp.group].push(i);
+    }
+  });
+  for(const grp in groups){
+    const all = G.spaces.filter(s=>s.group===grp);
+    if(all.every(s=>s.owner===p.idx)){
+      if(all.some(s=>s.houses<5)) return true;
+    }
+  }
+  return false;
+}
+
+function showBuildModal(){
+  const p = currentPlayer();
+  const groups = {};
+  p.props.forEach(i=>{
+    const sp = G.spaces[i];
+    if(sp.group && ownsFullGroup(p.idx, sp.group)){
+      if(!groups[sp.group]) groups[sp.group] = [];
+      groups[sp.group].push(i);
+    }
+  });
+
+  let html = `<div class="modal-title">🏠 בנייה</div>
+    <div class="modal-text">בחר נכס לבנות עליו (💰${p.money}₪)</div>
+    <div class="build-grid">`;
+
+  for(const grp in groups){
+    const houseCost = GROUPS[grp].house;
+    groups[grp].forEach(i=>{
+      const sp = G.spaces[i];
+      const minH = Math.min(...groups[grp].map(j=>G.spaces[j].houses));
+      const canAdd = sp.houses < 5 && sp.houses <= minH && p.money >= houseCost;
+      const canRemove = sp.houses > 0;
+      const label = sp.houses===5?'🏨':sp.houses>0?'🏠'.repeat(sp.houses):'—';
+      html += `<div class="build-row">
+        <div class="br-color" style="background:${GROUPS[grp].color}"></div>
+        <div class="br-name">${sp.name}</div>
+        <div class="br-houses">${label}</div>
+        <div class="br-btns">
+          <button class="br-btn" ${canRemove?'':`disabled`} onclick="sellHouse(${i})">−</button>
+          <button class="br-btn" ${canAdd?'':`disabled`} onclick="buyHouse(${i})"  >+</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  html += `</div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">סגור</button></div>`;
+  showModal(html);
+}
+
+function buyHouse(pos){
+  const p = currentPlayer();
+  const sp = G.spaces[pos];
+  const cost = GROUPS[sp.group].house;
+  if(p.money < cost || sp.houses >= 5) return;
+  p.money -= cost;
+  sp.houses++;
+  addLog(`${p.name} בנה ${sp.houses===5?'מלון':'בית'} ב${sp.name} (${cost}₪)`);
+  updateUI();
+  showBuildModal();
+}
+
+function sellHouse(pos){
+  const p = currentPlayer();
+  const sp = G.spaces[pos];
+  const refund = Math.floor(GROUPS[sp.group].house / 2);
+  sp.houses--;
+  p.money += refund;
+  addLog(`${p.name} מכר בית ב${sp.name} (+${refund}₪)`);
+  updateUI();
+  showBuildModal();
+}
+
+function countBuildings(p){
+  let houses=0, hotels=0;
+  p.props.forEach(i=>{
+    const h = G.spaces[i].houses;
+    if(h===5) hotels++; else houses+=h;
+  });
+  return {houses, hotels};
+}
+
+/* ═══════════════════════════════════════
+   BUY MODAL
+   ═══════════════════════════════════════ */
+function showBuyModal(p, pos){
+  const sp = G.spaces[pos];
+  const groupColor = sp.group ? GROUPS[sp.group].color : (sp.type==='rail'?'var(--railroad)':'var(--utility)');
+  let details = '';
+  if(sp.type==='prop'){
+    details = `<div class="prop-card">
+      <div class="pc-row"><span>שכירות בסיס</span><span>${sp.rent[0]}₪</span></div>
+      <div class="pc-row"><span>עם בית אחד</span><span>${sp.rent[1]}₪</span></div>
+      <div class="pc-row"><span>עם 2 בתים</span><span>${sp.rent[2]}₪</span></div>
+      <div class="pc-row"><span>עם 3 בתים</span><span>${sp.rent[3]}₪</span></div>
+      <div class="pc-row"><span>עם 4 בתים</span><span>${sp.rent[4]}₪</span></div>
+      <div class="pc-row"><span>עם מלון</span><span>${sp.rent[5]}₪</span></div>
+      <div class="pc-row"><span>עלות בית</span><span>${GROUPS[sp.group].house}₪</span></div>
+    </div>`;
+  } else if(sp.type==='rail'){
+    details = `<div class="prop-card">
+      <div class="pc-row"><span>תחנה אחת</span><span>25₪</span></div>
+      <div class="pc-row"><span>2 תחנות</span><span>50₪</span></div>
+      <div class="pc-row"><span>3 תחנות</span><span>100₪</span></div>
+      <div class="pc-row"><span>4 תחנות</span><span>200₪</span></div>
+    </div>`;
+  } else {
+    details = `<div class="prop-card">
+      <div class="pc-row"><span>שירות אחד</span><span>4× קוביות</span></div>
+      <div class="pc-row"><span>2 שירותים</span><span>10× קוביות</span></div>
+    </div>`;
+  }
+
+  const canAfford = p.money >= sp.price;
+  showModal(`
+    <div class="modal-prop-color" style="background:${groupColor}"></div>
+    <div class="modal-title">${sp.name}</div>
+    <div class="modal-text">מחיר: ${sp.price}₪ | יתרה: ${p.money}₪</div>
+    ${details}
+    <div class="modal-actions">
+      <button class="btn btn-gold" ${canAfford?'':`disabled`} onclick="buyProperty(${pos});closeModal()">🏠 קנה</button>
+      <button class="btn btn-outline" onclick="closeModal();updateUI()">ויתור</button>
+    </div>`);
+}
+
+function buyProperty(pos){
+  const p = currentPlayer();
+  const sp = G.spaces[pos];
+  p.money -= sp.price;
+  sp.owner = p.idx;
+  p.props.push(pos);
+  addLog(`${p.name} קנה את ${sp.name} ב-${sp.price}₪`);
+  updateUI();
+}
+
+/* ═══════════════════════════════════════
+   SPACE INFO (click on board)
+   ═══════════════════════════════════════ */
+function showSpaceInfo(pos){
+  const sp = G.spaces[pos];
+  if(sp.type==='prop'||sp.type==='rail'||sp.type==='util'){
+    const ownerName = sp.owner!==null ? G.players[sp.owner].name : 'פנוי';
+    const groupColor = sp.group ? GROUPS[sp.group].color : (sp.type==='rail'?'var(--railroad)':'var(--utility)');
+    const housesLabel = sp.houses===5?'🏨 מלון':sp.houses>0?'🏠'.repeat(sp.houses):'ללא בתים';
+    showModal(`
+      <div class="modal-prop-color" style="background:${groupColor}"></div>
+      <div class="modal-title">${sp.name}</div>
+      <div class="modal-text">בעלים: ${ownerName}<br>${sp.type==='prop'?housesLabel:''}</div>
+      <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">סגור</button></div>`);
+  }
+}
+
+/* ═══════════════════════════════════════
+   TURN MANAGEMENT
+   ═══════════════════════════════════════ */
+function endTurn(){
+  G.rolled = false;
+  G.doublesCount = 0;
+  G.diceValues = [0,0];
+  do {
+    G.currentIdx = (G.currentIdx + 1) % G.players.length;
+  } while(G.players[G.currentIdx].bankrupt);
+  addLog(`▶ תור של ${currentPlayer().name}`);
+  updateUI();
+}
+
+/* ═══════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════ */
+function showModal(html){
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+/* ═══════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════ */
+function shuffleArray(arr){
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+}
+
+/* ═══════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════ */
+initSetup();
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script>
+</body>
+</html>

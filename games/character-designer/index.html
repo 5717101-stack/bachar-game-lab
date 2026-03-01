@@ -33,6 +33,7 @@ body{
   color:var(--text);
   user-select:none;-webkit-user-select:none;
   display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top);
 }
 
 /* ── Top Bar ── */
@@ -194,7 +195,7 @@ body{
 </head>
 <body>
 
-<a href="../../" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.5);color:#fff;text-decoration:none;padding:6px 14px;border-radius:12px;font-family:sans-serif;font-size:0.85em;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">🏠 משחקים</a>
+<a href="../../" style="position:fixed;top:calc(12px + env(safe-area-inset-top));left:12px;z-index:9999;background:rgba(0,0,0,0.5);color:#fff;text-decoration:none;padding:6px 14px;border-radius:12px;font-family:sans-serif;font-size:0.85em;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">🏠 משחקים</a>
 
 <!-- Top Bar -->
 <div class="topbar">

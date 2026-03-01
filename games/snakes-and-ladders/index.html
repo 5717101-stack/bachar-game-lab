@@ -39,6 +39,7 @@ body {
   background:var(--bg);
   color:var(--text);
   display:flex; flex-direction:column;
+  padding-top:env(safe-area-inset-top);
 }
 
 .bg-glow {
@@ -169,7 +170,7 @@ body {
 .game-wrap { display:none; flex-direction:column; height:100%; position:relative; z-index:1; }
 .game-wrap.active { display:flex; }
 .back-btn {
-  position:fixed; top:12px; left:12px; z-index:9999;
+  position:fixed; top:calc(12px + env(safe-area-inset-top)); left:12px; z-index:9999;
   background:var(--surface); color:#fff; text-decoration:none;
   padding:8px 16px; border-radius:14px; font-size:0.85em;
   backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);

@@ -19,6 +19,7 @@ body {
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
+    padding-top: env(safe-area-inset-top);
 }
 
 #game-wrapper {
@@ -50,7 +51,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
+    padding: calc(10px + env(safe-area-inset-top)) 20px 10px;
     pointer-events: none;
     z-index: 10;
 }

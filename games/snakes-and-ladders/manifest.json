@@ -1,0 +1,16 @@
+{
+  "name": "סולמות ונחשים",
+  "short_name": "סולמות",
+  "description": "הטילו קובייה וטפסו ל-100!",
+  "start_url": "/games/snakes-and-ladders/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "he",
+  "theme_color": "#0c0e1a",
+  "background_color": "#0c0e1a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

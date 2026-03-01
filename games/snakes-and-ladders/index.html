@@ -687,11 +687,7 @@ function drawLadders(cs) {
     ctx.fillRect(a.x, a.y, cs, cs);
     ctx.restore();
 
-    // Arrow indicator
-    ctx.font = `${cs * 0.24}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('⬆️', a.x + cs / 2, a.y + cs * 0.75);
+    
   }
 }
 
@@ -830,10 +826,7 @@ function drawSnakes(cs) {
     ctx.fillRect(a.x, a.y, cs, cs);
     ctx.restore();
 
-    ctx.font = `${cs * 0.18}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('⬇️', a.x + cs / 2, a.y + cs * 0.78);
+    
   }
 }
 

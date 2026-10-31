@@ -507,12 +507,28 @@ function dist(a, b) {
 const WALK = 65;          // meters per minute (kids pace)
 const STOP_MIN = 4;       // minutes spent at each house
 
+// walk the given order through time windows; feasible = every house reached before closing
+function simulate(start, order) {
+  let t = nowMin(), pos = start, total = 0;
+  for (const h of order) {
+    const walk = dist(pos, h) * 1.3 / WALK;
+    let arrive = t + walk;
+    if (arrive >= h.close) return { feasible: false, totalWalk: Infinity };
+    if (arrive < h.open) arrive = h.open;   // wait outside until it opens
+    total += walk;
+    t = arrive + STOP_MIN;
+    pos = h;
+  }
+  return { feasible: true, totalWalk: total };
+}
+
 function buildRoute(start) {
-  // greedy nearest-neighbor with time windows + urgency for houses closing soon
-  let t = nowMin();
-  let pos = start;
+  // phase 1: greedy nearest-neighbor with time windows.
+  // urgency kicks in ONLY when a house is really about to close (<25 min) —
+  // otherwise it dominated the score and produced zigzag routes.
+  let t = nowMin(), pos = start;
   const todo = HOUSES.filter(h => !visited.has(h.id) && nowMin() < h.close);
-  const order = [];
+  let order = [];
   while (todo.length) {
     let best = null, bestScore = Infinity;
     for (const h of todo) {
@@ -521,31 +537,61 @@ function buildRoute(start) {
       if (arrive >= h.close) continue;               // would arrive after closing
       const wait = Math.max(0, h.open - arrive);     // not open yet when arriving
       const slack = h.close - arrive;                // minutes left before it closes
-      const urgency = Math.max(0, (60 - slack)) * 0.35;
-      const score = walkMin + wait*0.7 - urgency;
+      const urgency = slack < 25 ? (25 - slack) * 0.6 : 0;
+      const score = walkMin + wait * 0.7 - urgency;
       if (score < bestScore) { bestScore = score; best = h; }
     }
     if (!best) break;
     const walkMin = dist(pos, best) * 1.3 / WALK;
     t += walkMin + Math.max(0, best.open - (t + walkMin)) + STOP_MIN;
     pos = best;
-    order.push(best.id);
+    order.push(best);
     todo.splice(todo.indexOf(best), 1);
   }
-  return order;
+  // phase 2: 2-opt — untangle crossings by reversing segments,
+  // keeping only changes that shorten the walk AND stay inside all time windows
+  let improved = true, guard = 0;
+  while (improved && guard++ < 40) {
+    improved = false;
+    const base = simulate(start, order);
+    for (let i = 0; i < order.length - 1; i++) {
+      for (let j = i + 1; j < order.length; j++) {
+        const cand = order.slice(0, i).concat(order.slice(i, j + 1).reverse(), order.slice(j + 1));
+        const s = simulate(start, cand);
+        if (s.feasible && s.totalWalk < simulate(start, order).totalWalk - 0.01) {
+          order = cand; improved = true;
+        }
+      }
+    }
+  }
+  return order.map(h => h.id);
 }
 
-function drawRoute(start) {
+// real walking-path geometry from the OSM foot router; straight dashes as fallback
+async function walkingGeometry(pts) {
+  try {
+    const coords = pts.map(p => `${p[1]},${p[0]}`).join(';');
+    const r = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${coords}?overview=full&geometries=geojson&steps=false`);
+    const j = await r.json();
+    if (j.code === 'Ok' && j.routes?.length) {
+      return j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    }
+  } catch (e) { /* offline / router down — fall through */ }
+  return pts;
+}
+
+async function drawRoute(start) {
   routeOrder = buildRoute(start);
   if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
   const pts = [[start.lat, start.lng], ...routeOrder.map(id => { const h = HOUSES.find(x=>x.id===id); return [h.lat, h.lng]; })];
   if (pts.length > 1) {
-    routeLine = L.polyline(pts, { color:'#ff8c1a', weight:4, dashArray:'2 10', opacity:.85, lineCap:'round' }).addTo(map);
+    const latlngs = await walkingGeometry(pts);
+    routeLine = L.polyline(latlngs, { color:'#ff8c1a', weight:5, dashArray:'1 9', opacity:.9, lineCap:'round', lineJoin:'round' }).addTo(map);
     map.fitBounds(routeLine.getBounds().pad(0.12));
   }
   refresh();
   const btn = document.getElementById('routeBtn');
-  btn.textContent = routeOrder.length ? `✨ המסלול מוכן! ${routeOrder.length} תחנות` : '🦇 אין כרגע בתים פתוחים';
+  btn.textContent = routeOrder.length ? `🥾 מסלול הליכה מוכן! ${routeOrder.length} תחנות` : '🦇 אין כרגע בתים פתוחים';
   setTimeout(()=>{ btn.textContent = '🧭 חשבו לי מסלול מחדש'; }, 3500);
 }
 

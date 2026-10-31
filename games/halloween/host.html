@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎃 עדכון פרטי אירוח</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎃</text></svg>">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#1a0a2e; --card:#2a1545; --orange:#ff8c1a; --orange2:#ffb347;
+    --green:#39e75f; --red:#ff5c5c; --text:#fff3e0; --muted:#b9a5d0; --border:#4a2a78;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Varela Round',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+  #wrap { max-width:520px; margin:0 auto; padding:22px 16px 60px; }
+  header { text-align:center; margin-bottom:18px; }
+  header .pump { font-size:52px; }
+  header h1 { font-size:21px; margin-top:6px; text-shadow:0 0 14px rgba(255,140,26,.5); }
+  header p { color:var(--muted); font-size:14px; margin-top:6px; line-height:1.5; }
+
+  #card { background:var(--card); border:2px solid var(--border); border-radius:18px; padding:16px; }
+  .frow { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .f { flex:1; min-width:110px; }
+  .f label { display:block; font-size:12.5px; color:var(--muted); margin-bottom:4px; }
+  .f input {
+    width:100%; font-family:inherit; font-size:16px;
+    background:#1d0e38; color:var(--text); border:1.5px solid var(--border); border-radius:11px;
+    padding:11px 12px; outline:none;
+  }
+  .f input:focus { border-color:var(--orange); }
+  .f input[type=time] { direction:ltr; }
+  .f.small { flex:0 0 100px; }
+  .hint { font-size:12px; color:var(--muted); margin:-6px 0 12px; }
+
+  #map { height:230px; border-radius:14px; border:1.5px solid var(--border); margin-bottom:6px; }
+  .map-hint { font-size:12px; color:var(--muted); margin-bottom:14px; }
+
+  #saveBtn {
+    width:100%; font-family:inherit; font-size:18px; font-weight:bold;
+    background:linear-gradient(135deg,var(--green),#19b741); color:#04260d;
+    border:none; border-radius:15px; padding:15px; cursor:pointer;
+  }
+  #saveBtn:disabled { opacity:.6; }
+  #msg { text-align:center; margin-top:12px; font-size:15px; min-height:22px; }
+  #msg.ok { color:var(--green); } #msg.err { color:var(--red); }
+
+  #loading, #badlink { text-align:center; padding:80px 20px; }
+  #loading .s { font-size:46px; animation:spin 1.2s linear infinite; display:inline-block; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #badlink { display:none; }
+  #badlink .e { font-size:56px; }
+
+  .leaflet-container { font-family:inherit; background:#0d0518; }
+  .dark-tiles { filter:invert(1) hue-rotate(200deg) brightness(.75) contrast(.95) saturate(.65); }
+  .pin { background:none; border:none; font-size:32px; filter:drop-shadow(0 0 8px rgba(255,140,26,.9)); }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <div class="pump">🎃👻</div>
+    <h1>פרטי האירוח שלכם הערב</h1>
+    <p>תודה שאתם מארחים את ילדי השכונה!<br>בדקו שהפרטים נכונים, עדכנו מה שצריך ולחצו "אישור ושמירה".</p>
+  </header>
+
+  <div id="loading"><span class="s">🔮</span><p style="margin-top:10px">טוען את הפרטים...</p></div>
+  <div id="badlink"><div class="e">🦇</div><p style="margin-top:10px">הקישור לא תקין או שפג תוקפו.<br>פנו למי ששלח לכם אותו.</p></div>
+
+  <div id="card" style="display:none">
+    <div class="frow">
+      <div class="f"><label>שם המארח/ת 👩</label><input id="f-host"></div>
+      <div class="f"><label>טלפון 📞</label><input id="f-phone" type="tel"></div>
+    </div>
+    <div class="frow">
+      <div class="f"><label>כתובת 🏠 (רחוב, מספר וכניסה)</label><input id="f-addr"></div>
+    </div>
+    <div class="hint">שיניתם כתובת? המיקום על המפה יתעדכן אוטומטית בשמירה.</div>
+    <div class="frow">
+      <div class="f small"><label>משעה 🕐</label><input id="f-open" type="time"></div>
+      <div class="f small"><label>עד שעה 🕗</label><input id="f-close" type="time"></div>
+      <div class="f small"><label>קומה 🏢</label><input id="f-floor"></div>
+      <div class="f small"><label>דירה 🚪</label><input id="f-apt"></div>
+    </div>
+    <div class="frow">
+      <div class="f"><label>קוד כניסה לבניין 🔑</label><input id="f-code"></div>
+    </div>
+    <div class="frow">
+      <div class="f"><label>הערה 💡 (בלובי / בגינה / בניין A...)</label><input id="f-note"></div>
+    </div>
+    <div id="map"></div>
+    <div class="map-hint">זה המיקום שהילדים יראו — אפשר לגרור את הדלעת לדיוק 🤏</div>
+    <button id="saveBtn" onclick="save()">✅ אישור ושמירה</button>
+    <div id="msg"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const token = new URLSearchParams(location.search).get('t') || '';
+const F = ['host','phone','addr','open','close','floor','apt','code','note'];
+let house = null, map = null, marker = null, pinMoved = false;
+
+async function load() {
+  const r = await fetch('/api/halloween/host/' + encodeURIComponent(token), { cache:'no-store' });
+  document.getElementById('loading').style.display = 'none';
+  if (!r.ok) { document.getElementById('badlink').style.display = 'block'; return; }
+  house = await r.json();
+  F.forEach(f => document.getElementById('f-' + f).value = house[f] || '');
+  document.getElementById('card').style.display = '';
+  map = L.map('map', { zoomControl:false, attributionControl:false }).setView([house.lat, house.lng], 17);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, className:'dark-tiles' }).addTo(map);
+  marker = L.marker([house.lat, house.lng], {
+    draggable:true,
+    icon: L.divIcon({ className:'pin', html:'🎃', iconSize:[32,32], iconAnchor:[16,16] }),
+  }).addTo(map);
+  marker.on('dragend', () => { pinMoved = true; });
+  setTimeout(() => map.invalidateSize(), 200);
+}
+
+async function save() {
+  const btn = document.getElementById('saveBtn');
+  const msg = document.getElementById('msg');
+  btn.disabled = true; btn.textContent = '💾 שומר...';
+  msg.textContent = ''; msg.className = '';
+  const body = {};
+  F.forEach(f => body[f] = document.getElementById('f-' + f).value.trim());
+  if (pinMoved) { const p = marker.getLatLng(); body.lat = +p.lat.toFixed(7); body.lng = +p.lng.toFixed(7); }
+  try {
+    const r = await fetch('/api/halloween/host/' + encodeURIComponent(token), {
+      method:'PUT',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'שגיאה');
+    house = j.house;
+    marker.setLatLng([house.lat, house.lng]);
+    map.setView([house.lat, house.lng], 17);
+    pinMoved = false;
+    msg.textContent = '🎃 הפרטים נשמרו — תודה רבה! נתראה הערב';
+    msg.className = 'ok';
+  } catch (e) {
+    msg.textContent = '❌ ' + e.message;
+    msg.className = 'err';
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ אישור ושמירה';
+  }
+}
+load();
+</script>
+</body>
+</html>

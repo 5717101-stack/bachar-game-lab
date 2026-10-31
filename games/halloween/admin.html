@@ -93,6 +93,32 @@
     padding:14px 34px; box-shadow:0 4px 20px rgba(25,183,65,.45); cursor:pointer;
   }
   #fab:disabled { opacity:.6; }
+
+  /* whatsapp row + checkboxes */
+  .warow { display:flex; align-items:center; gap:10px; width:100%; }
+  .selall { font-size:13.5px; color:var(--muted); display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .selall input, .hchk { width:18px; height:18px; accent-color:var(--orange); cursor:pointer; }
+  .btn-wa { background:linear-gradient(135deg,#25d366,#128c7e); color:#fff; }
+  .btn-wa:disabled { opacity:.5; }
+  .house .head .hchk { flex:0 0 auto; }
+  .nophone { opacity:.35; }
+  .hostlink { font-size:12px; color:var(--muted); margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .hostlink button { font-family:inherit; font-size:12px; background:#1d0e38; color:var(--orange2); border:1px solid var(--border); border-radius:8px; padding:4px 10px; cursor:pointer; }
+  .confirmed-badge { font-size:11.5px; color:var(--green); }
+
+  /* excel import modal */
+  #xlsOverlay { position:fixed; inset:0; background:rgba(8,2,20,.8); z-index:4000; display:none; align-items:center; justify-content:center; padding:14px; }
+  #xlsOverlay.show { display:flex; }
+  #xlsModal { background:var(--card); border:2px solid #5a3590; border-radius:18px; width:100%; max-width:680px; max-height:88vh; display:flex; flex-direction:column; padding:16px; }
+  #xlsModal h2 { font-size:17px; margin-bottom:10px; }
+  #xlsWarn { font-size:12.5px; color:var(--orange2); margin-bottom:8px; max-height:90px; overflow-y:auto; }
+  #xlsWarn div { margin-bottom:2px; }
+  #xlsTableWrap { overflow:auto; flex:1; border:1px solid var(--border); border-radius:10px; }
+  #xlsTableWrap table { border-collapse:collapse; width:100%; font-size:12.5px; }
+  #xlsTableWrap th, #xlsTableWrap td { padding:6px 8px; border-bottom:1px solid #3a2060; text-align:right; white-space:nowrap; }
+  #xlsTableWrap th { background:#1d0e38; position:sticky; top:0; color:var(--muted); font-weight:normal; }
+  #xlsBtns { display:flex; gap:10px; margin-top:12px; }
+  #xlsBtns .btn { flex:1; padding:12px; font-size:15px; }
 </style>
 </head>
 <body>
@@ -107,8 +133,26 @@
 <div id="topbar" style="display:none">
   <h1>🔧 ניהול בתים</h1>
   <button class="btn btn-add" onclick="addHouse()">➕ בית חדש</button>
+  <button class="btn btn-add" onclick="document.getElementById('xlsFile').click()">📤 טעינת אקסל</button>
+  <input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" style="display:none">
   <a class="btn-back" href="./">🎃 חזרה למפה</a>
+  <div class="warow">
+    <label class="selall"><input type="checkbox" id="selAll" onchange="toggleAll(this.checked)"> בחר הכל</label>
+    <button class="btn btn-wa" id="waBtn" onclick="sendWa()">📨 שלח וואטסאפ לעדכון פרטים (<span id="selCount">0</span>)</button>
+  </div>
   <div id="saveMsg"></div>
+</div>
+
+<div id="xlsOverlay">
+  <div id="xlsModal">
+    <h2 id="xlsTitle">🔮 קורא את הקובץ...</h2>
+    <div id="xlsWarn"></div>
+    <div id="xlsTableWrap"></div>
+    <div id="xlsBtns">
+      <button class="btn btn-save" id="xlsConfirm" onclick="confirmImport()">✅ אשר ודרוס הכל</button>
+      <button class="btn btn-add" onclick="closeImport()">ביטול</button>
+    </div>
+  </div>
 </div>
 
 <div id="wrap" style="display:none"></div>
@@ -141,13 +185,15 @@ async function enter() {
   document.getElementById('topbar').style.display = '';
   document.getElementById('wrap').style.display = '';
   document.getElementById('fab').style.display = '';
-  houses = await (await fetch('/api/halloween/houses', { cache: 'no-store' })).json();
+  // with the admin password the server returns phones + host tokens too
+  houses = await (await fetch('/api/halloween/houses', { cache: 'no-store', headers: { 'x-admin-pass': PASS } })).json();
   renderAll();
 }
 
 /* ---------- render ---------- */
 const FIELDS = [
   ['host',  'מארח/ת 👩', 'text'],
+  ['phone', 'טלפון 📞 (רק למנהל)', 'tel'],
   ['open',  'משעה 🕐', 'time'],
   ['close', 'עד שעה 🕗', 'time'],
   ['floor', 'קומה 🏢', 'text'],
@@ -159,18 +205,23 @@ function renderAll() {
   const wrap = document.getElementById('wrap');
   wrap.innerHTML = '';
   houses.forEach((h, i) => wrap.appendChild(houseCard(h, i)));
+  updateSelCount();
 }
 
 function houseCard(h, i) {
   const d = document.createElement('div');
   d.className = 'house';
   d.id = 'house-' + i;
+  const hasPhone = !!(h.phone || '').replace(/\D/g, '');
   d.innerHTML = `
-    <div class="head" onclick="toggle(${i})">
-      <span>🎃</span>
-      <span class="ttl">${esc(h.addr) || 'בית חדש'}</span>
-      <span class="hours">${esc(h.open)}–${esc(h.close)}</span>
-      <span>▾</span>
+    <div class="head">
+      <input type="checkbox" class="hchk ${hasPhone ? '' : 'nophone'}" data-i="${i}" ${hasPhone ? '' : 'disabled title="אין טלפון"'}
+             onclick="event.stopPropagation()" onchange="updateSelCount()">
+      <span onclick="toggle(${i})">🎃</span>
+      <span class="ttl" onclick="toggle(${i})">${esc(h.addr) || 'בית חדש'}</span>
+      ${h.confirmed ? '<span class="confirmed-badge" title="המארח אישר את הפרטים">✔ אושר</span>' : ''}
+      <span class="hours" onclick="toggle(${i})">${esc(h.open)}–${esc(h.close)}</span>
+      <span onclick="toggle(${i})">▾</span>
     </div>
     <div class="body">
       <div class="addr-row">
@@ -196,6 +247,10 @@ function houseCard(h, i) {
       </div>
       <div class="minimap" id="map-${i}"></div>
       <div class="map-hint">אפשר לגרור את הסיכה לכיוון מדויק 🤏</div>
+      ${h.token ? `<div class="hostlink">🔗 קישור עריכה אישי למארח:
+        <button onclick="copyHostLink(${i})">📋 העתק</button>
+        ${h.confirmed ? `<span class="confirmed-badge">אושר ע"י המארח ${new Date(h.confirmed).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</span>` : ''}
+      </div>` : ''}
       <div class="foot">
         <button class="btn btn-del" onclick="delHouse(${i})">🗑️ מחק בית</button>
       </div>
@@ -316,6 +371,123 @@ async function saveAll() {
 }
 
 function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+/* ---------- host links ---------- */
+function copyHostLink(i) {
+  const url = location.origin + '/games/halloween/host.html?t=' + houses[i].token;
+  navigator.clipboard.writeText(url);
+  setGeoStatus(i, '📋 הקישור הועתק: ' + url, 'ok');
+}
+
+/* ---------- selection + WhatsApp ---------- */
+function toggleAll(on) {
+  document.querySelectorAll('.hchk:not(:disabled)').forEach(c => c.checked = on);
+  updateSelCount();
+}
+function selectedIds() {
+  return [...document.querySelectorAll('.hchk:checked')].map(c => houses[c.dataset.i].id);
+}
+function updateSelCount() {
+  document.getElementById('selCount').textContent = selectedIds().length;
+}
+
+async function sendWa() {
+  const ids = selectedIds();
+  const msg = document.getElementById('saveMsg');
+  if (!ids.length) { msg.textContent = 'סמנו לפחות בית אחד עם טלפון'; msg.className = 'err'; return; }
+  if (!confirm(`לשלוח הודעת וואטסאפ עם קישור עריכה אישי ל־${ids.length} מארחים?`)) return;
+  const btn = document.getElementById('waBtn');
+  btn.disabled = true;
+  msg.textContent = '📨 שולח...'; msg.className = '';
+  try {
+    const r = await fetch('/api/halloween/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-pass': PASS },
+      body: JSON.stringify({ ids }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'שליחה נכשלה');
+    const fails = j.results.filter(x => !x.ok);
+    msg.textContent = `✅ נשלחו ${j.sent}/${ids.length}` +
+      (fails.length ? ' | נכשלו: ' + fails.map(f => `${f.addr} (${f.error})`).join(', ') : '');
+    msg.className = fails.length ? 'err' : 'ok';
+  } catch (e) {
+    msg.textContent = '❌ ' + e.message; msg.className = 'err';
+  } finally { btn.disabled = false; }
+}
+
+/* ---------- Excel import ---------- */
+let importPreview = null;
+
+document.getElementById('xlsFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const ov = document.getElementById('xlsOverlay');
+  ov.classList.add('show');
+  document.getElementById('xlsTitle').textContent = '🔮 קורא את הקובץ עם AI — זה לוקח כמה שניות...';
+  document.getElementById('xlsWarn').innerHTML = '';
+  document.getElementById('xlsTableWrap').innerHTML = '';
+  document.getElementById('xlsConfirm').style.display = 'none';
+  try {
+    const b64 = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result.split(',')[1]);
+      fr.onerror = rej;
+      fr.readAsDataURL(file);
+    });
+    const r = await fetch('/api/halloween/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-pass': PASS },
+      body: JSON.stringify({ data_b64: b64, filename: file.name }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'הייבוא נכשל');
+    importPreview = j.houses;
+    document.getElementById('xlsTitle').textContent =
+      `📋 נמצאו ${j.count} בתים — בדקו שהכל נכון לפני הדריסה (הרשימה הקיימת תוחלף!)`;
+    document.getElementById('xlsWarn').innerHTML = (j.warnings || []).map(w => `<div>⚠️ ${esc(w)}</div>`).join('');
+    const rows = j.houses.map(h => `<tr>
+      <td>${esc(h.addr)}</td><td>${esc(h.host)}</td><td dir="ltr">${esc(h.phone)}</td>
+      <td dir="ltr">${esc(h.open)}–${esc(h.close)}</td><td>${esc(h.floor)}</td><td>${esc(h.apt)}</td>
+      <td dir="ltr">${esc(h.code)}</td><td>${esc(h.note)}</td>
+      <td>${h.geo === 'google' ? '🟢' : h.geo === 'osm' ? '🟡' : '🔴'}</td>
+    </tr>`).join('');
+    document.getElementById('xlsTableWrap').innerHTML =
+      `<table><tr><th>כתובת</th><th>מארח</th><th>טלפון</th><th>שעות</th><th>קומה</th><th>דירה</th><th>קוד</th><th>הערה</th><th>מיקום</th></tr>${rows}</table>`;
+    document.getElementById('xlsConfirm').style.display = '';
+  } catch (err) {
+    document.getElementById('xlsTitle').textContent = '❌ ' + err.message;
+  }
+});
+
+async function confirmImport() {
+  if (!importPreview) return;
+  const btn = document.getElementById('xlsConfirm');
+  btn.disabled = true; btn.textContent = '💾 שומר...';
+  try {
+    const r = await fetch('/api/halloween/houses', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-admin-pass': PASS },
+      body: JSON.stringify(importPreview),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'שמירה נכשלה');
+    houses = importPreview;
+    importPreview = null;
+    Object.keys(maps).forEach(k => delete maps[k]);
+    renderAll();
+    closeImport();
+    const msg = document.getElementById('saveMsg');
+    msg.textContent = `✅ נטענו ${j.count} בתים מהאקסל — המפה של הילדים מעודכנת`;
+    msg.className = 'ok';
+  } catch (e) {
+    document.getElementById('xlsTitle').textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ אשר ודרוס הכל';
+  }
+}
+function closeImport() { document.getElementById('xlsOverlay').classList.remove('show'); }
 
 /* auto-login if session already has the password */
 if (PASS) { document.getElementById('pw').value = PASS; tryLogin(); }

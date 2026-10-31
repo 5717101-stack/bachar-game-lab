@@ -20,6 +20,7 @@ app.get('/health', (_req, res) => res.sendStatus(200));
 
 /* ---------- Halloween houses ---------- */
 app.get('/api/halloween/houses', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
   try {
     const [buf] = await bucket.file(HOUSES_OBJECT).download();
     res.type('application/json').send(buf);

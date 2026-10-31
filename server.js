@@ -253,6 +253,33 @@ app.put('/api/halloween/host/:token', async (req, res) => {
   }
 });
 
+/* ---------- visit tracking ---------- */
+// one empty GCS object per session: halloween/stats/<visitor-id>/<timestamp>
+// no read-modify-write => no race conditions; stats = list + count
+app.post('/api/halloween/track', async (req, res) => {
+  try {
+    const vid = String(req.body?.vid || '').replace(/[^a-z0-9]/gi, '').slice(0, 40);
+    if (!vid) return res.status(400).json({ error: 'missing vid' });
+    await bucket.file(`halloween/stats/${vid}/${Date.now()}`).save('', { contentType: 'text/plain' });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('track failed:', e.message);
+    res.status(502).json({ error: 'track failed' });
+  }
+});
+
+app.get('/api/halloween/stats', requireAdmin, async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const [files] = await bucket.getFiles({ prefix: 'halloween/stats/' });
+    const unique = new Set(files.map(f => f.name.split('/')[2])).size;
+    res.json({ sessions: files.length, unique });
+  } catch (e) {
+    console.error('stats failed:', e.message);
+    res.status(502).json({ error: 'stats failed' });
+  }
+});
+
 /* ---------- WhatsApp notify (admin) ---------- */
 function toWaNumber(phone) {
   let d = String(phone || '').replace(/\D/g, '');

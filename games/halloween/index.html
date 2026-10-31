@@ -652,6 +652,23 @@ function refresh() {
 }
 loadHouses();
 setInterval(refresh, 30000);
+
+// ---------------- visit tracking (anonymous, once per tab session) ----------------
+(function track() {
+  try {
+    if (sessionStorage.getItem('hw-tracked')) return;
+    let vid = localStorage.getItem('hw-vid');
+    if (!vid) {
+      vid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('hw-vid', vid);
+    }
+    fetch('/api/halloween/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vid }),
+    }).then(() => sessionStorage.setItem('hw-tracked', '1')).catch(() => {});
+  } catch (e) { /* private-mode storage errors — ignore */ }
+})();
 </script>
 </body>
 </html>

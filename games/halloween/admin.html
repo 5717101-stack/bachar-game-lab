@@ -100,6 +100,11 @@
   .selall input, .hchk { width:18px; height:18px; accent-color:var(--orange); cursor:pointer; }
   .btn-wa { background:linear-gradient(135deg,#25d366,#128c7e); color:#fff; }
   .btn-wa:disabled { opacity:.5; }
+  #statsChip {
+    margin-inline-start:auto; font-size:13px; color:var(--orange2);
+    background:#1d0e38; border:1.5px solid var(--border); border-radius:999px; padding:6px 13px;
+    white-space:nowrap;
+  }
   .house .head .hchk { flex:0 0 auto; }
   .nophone { opacity:.35; }
   .hostlink { font-size:12px; color:var(--muted); margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
@@ -139,6 +144,7 @@
   <div class="warow">
     <label class="selall"><input type="checkbox" id="selAll" onchange="toggleAll(this.checked)"> בחר הכל</label>
     <button class="btn btn-wa" id="waBtn" onclick="sendWa()">📨 שלח וואטסאפ לעדכון פרטים (<span id="selCount">0</span>)</button>
+    <span id="statsChip" title="כניסות למפת הילדים">👣 טוען...</span>
   </div>
   <div id="saveMsg"></div>
 </div>
@@ -188,6 +194,17 @@ async function enter() {
   // with the admin password the server returns phones + host tokens too
   houses = await (await fetch('/api/halloween/houses', { cache: 'no-store', headers: { 'x-admin-pass': PASS } })).json();
   renderAll();
+  loadStats();
+  setInterval(loadStats, 60000);
+}
+
+async function loadStats() {
+  try {
+    const s = await (await fetch('/api/halloween/stats', { headers: { 'x-admin-pass': PASS } })).json();
+    document.getElementById('statsChip').textContent = `👣 כניסות: ${s.sessions} · מבקרים: ${s.unique}`;
+  } catch (e) {
+    document.getElementById('statsChip').textContent = '👣 —';
+  }
 }
 
 /* ---------- render ---------- */

@@ -507,9 +507,16 @@ function dist(a, b) {
 const WALK = 65;          // meters per minute (kids pace)
 const STOP_MIN = 4;       // minutes spent at each house
 
+// planning starts at the LATER of "now" and the earliest house opening —
+// a route computed at noon should be the 17:30 evening plan, not a plan full of waits
+function planStartTime() {
+  const opens = HOUSES.filter(h => !visited.has(h.id)).map(h => h.open);
+  return opens.length ? Math.max(nowMin(), Math.min(...opens)) : nowMin();
+}
+
 // walk the given order through time windows; feasible = every house reached before closing
-function simulate(start, order) {
-  let t = nowMin(), pos = start, total = 0;
+function simulate(start, order, t0) {
+  let t = t0, pos = start, total = 0;
   for (const h of order) {
     const walk = dist(pos, h) * 1.3 / WALK;
     let arrive = t + walk;
@@ -523,10 +530,10 @@ function simulate(start, order) {
 }
 
 function buildRoute(start) {
+  const t0 = planStartTime();
   // phase 1: greedy nearest-neighbor with time windows.
-  // urgency kicks in ONLY when a house is really about to close (<25 min) —
-  // otherwise it dominated the score and produced zigzag routes.
-  let t = nowMin(), pos = start;
+  // urgency kicks in ONLY when a house is really about to close (<25 min)
+  let t = t0, pos = start;
   const todo = HOUSES.filter(h => !visited.has(h.id) && nowMin() < h.close);
   let order = [];
   while (todo.length) {
@@ -548,19 +555,30 @@ function buildRoute(start) {
     order.push(best);
     todo.splice(todo.indexOf(best), 1);
   }
-  // phase 2: 2-opt — untangle crossings by reversing segments,
-  // keeping only changes that shorten the walk AND stay inside all time windows
+  const better = cand => {
+    const s = simulate(start, cand, t0);
+    return s.feasible && s.totalWalk < simulate(start, order, t0).totalWalk - 0.01;
+  };
+  // phase 2: local optimization —
+  //   2-opt (reverse a segment) untangles crossings;
+  //   or-opt (relocate one stop) consolidates adjacent houses, e.g. several
+  //   apartments in the same building, whenever their time windows allow
   let improved = true, guard = 0;
   while (improved && guard++ < 40) {
     improved = false;
-    const base = simulate(start, order);
     for (let i = 0; i < order.length - 1; i++) {
       for (let j = i + 1; j < order.length; j++) {
         const cand = order.slice(0, i).concat(order.slice(i, j + 1).reverse(), order.slice(j + 1));
-        const s = simulate(start, cand);
-        if (s.feasible && s.totalWalk < simulate(start, order).totalWalk - 0.01) {
-          order = cand; improved = true;
-        }
+        if (better(cand)) { order = cand; improved = true; }
+      }
+    }
+    for (let i = 0; i < order.length; i++) {
+      for (let j = 0; j <= order.length; j++) {
+        if (j === i || j === i + 1) continue;
+        const cand = order.slice();
+        const [h] = cand.splice(i, 1);
+        cand.splice(j > i ? j - 1 : j, 0, h);
+        if (better(cand)) { order = cand; improved = true; }
       }
     }
   }
@@ -591,7 +609,10 @@ async function drawRoute(start) {
   }
   refresh();
   const btn = document.getElementById('routeBtn');
-  btn.textContent = routeOrder.length ? `🥾 מסלול הליכה מוכן! ${routeOrder.length} תחנות` : '🦇 אין כרגע בתים פתוחים';
+  const t0 = planStartTime();
+  btn.textContent = !routeOrder.length ? '🦇 אין כרגע בתים פתוחים'
+    : t0 > nowMin() ? `🥾 המסלול לערב מוכן! יוצאים ב־${fmt(t0)}`
+    : `🥾 מסלול הליכה מוכן! ${routeOrder.length} תחנות`;
   setTimeout(()=>{ btn.textContent = '🧭 חשבו לי מסלול מחדש'; }, 3500);
 }
 

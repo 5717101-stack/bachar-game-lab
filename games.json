@@ -1,5 +1,14 @@
 [
   {
+    "id": "halloween",
+    "name": "Trick or Treat",
+    "nameHe": "ליל כל הקדושים 🍬",
+    "emoji": "🎃",
+    "author": "שכונת למד",
+    "color": "#FF8C1A",
+    "description": "מפת הממתקים של השכונה — נווטו מבית לבית!"
+  },
+  {
     "id": "monopoly",
     "name": "Monopoly New York",
     "nameHe": "מונופול ניו יורק",

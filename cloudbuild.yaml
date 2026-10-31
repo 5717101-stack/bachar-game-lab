@@ -5,7 +5,7 @@ steps:
     args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/second-brain-eu/bachar-game-lab:$SHORT_SHA']
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
-    args: ['run', 'deploy', 'bachar-game-lab', '--image', 'europe-west1-docker.pkg.dev/$PROJECT_ID/second-brain-eu/bachar-game-lab:$SHORT_SHA', '--region', 'europe-west1', '--platform', 'managed', '--cpu=1', '--memory=256Mi', '--min-instances=0', '--max-instances=2', '--port=8080', '--allow-unauthenticated']
+    args: ['run', 'deploy', 'bachar-game-lab', '--image', 'europe-west1-docker.pkg.dev/$PROJECT_ID/second-brain-eu/bachar-game-lab:$SHORT_SHA', '--region', 'europe-west1', '--platform', 'managed', '--cpu=1', '--memory=256Mi', '--min-instances=0', '--max-instances=2', '--port=8080', '--allow-unauthenticated', '--set-env-vars=DATA_BUCKET=bachar-game-lab-data,ADMIN_PASS=2882', '--update-secrets=GEOCODING_API_KEY=games-geocoding-key:latest']
 options:
   logging: CLOUD_LOGGING_ONLY
 timeout: '600s'

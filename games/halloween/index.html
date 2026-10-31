@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a0a2e">
+<title>🎃 ליל כל הקדושים בשכונת למד</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎃</text></svg>">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a0a2e;
+    --card: #2a1545;
+    --card2: #35195a;
+    --orange: #ff8c1a;
+    --orange2: #ffb347;
+    --green: #39e75f;
+    --red: #ff5c5c;
+    --purple: #b06aff;
+    --text: #fff3e0;
+    --muted: #b9a5d0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Varela Round', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    background: linear-gradient(180deg, #120627 0%, #1a0a2e 100%);
+    padding: 10px 14px 8px;
+    text-align: center;
+    position: relative;
+    z-index: 1200;
+    border-bottom: 2px solid #3d1f66;
+    flex: 0 0 auto;
+  }
+  header h1 {
+    font-size: 19px;
+    letter-spacing: .5px;
+    text-shadow: 0 0 14px rgba(255,140,26,.55);
+  }
+  #adminLink {
+    position: absolute;
+    top: 9px; left: 10px;
+    font-size: 17px;
+    text-decoration: none;
+    opacity: .55;
+  }
+  .statsbar {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 7px;
+    font-size: 13px;
+  }
+  .chip {
+    background: var(--card);
+    border: 1.5px solid #4a2a78;
+    border-radius: 999px;
+    padding: 4px 12px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .chip b { color: var(--orange2); }
+  #candyChip { border-color: var(--orange); }
+
+  /* ---------- map ---------- */
+  #mapwrap { position: relative; flex: 1 1 auto; min-height: 0; }
+  #map { position: absolute; inset: 0; background: #0d0518; }
+  .dark-tiles { filter: invert(1) hue-rotate(200deg) brightness(.75) contrast(.95) saturate(.65); }
+  .leaflet-container { font-family: 'Varela Round', sans-serif; }
+
+  .house-marker { background: none; border: none; }
+  .hm {
+    position: relative;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,.7));
+    transition: transform .15s;
+  }
+  .hm.closed { filter: grayscale(1) opacity(.62) drop-shadow(0 2px 5px rgba(0,0,0,.7)); font-size: 25px; }
+  .hm.soon { filter: drop-shadow(0 0 7px rgba(176,106,255,.9)); }
+  .hm.open { filter: drop-shadow(0 0 8px rgba(255,140,26,.95)); }
+  .hm .ord {
+    position: absolute;
+    top: -6px; right: -6px;
+    background: var(--orange);
+    color: #2b1200;
+    font-size: 13px;
+    font-weight: bold;
+    width: 21px; height: 21px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #fff3e0;
+  }
+  .hm .done {
+    position: absolute;
+    bottom: -4px; left: -4px;
+    font-size: 17px;
+  }
+  .me-marker { background: none; border: none; }
+  .me-dot {
+    width: 22px; height: 22px;
+    font-size: 22px; line-height: 22px;
+    text-align: center;
+    filter: drop-shadow(0 0 9px rgba(57,231,95,.95));
+    animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse { 0%,100% { transform: scale(1);} 50% { transform: scale(1.22);} }
+
+  #routeBtn {
+    position: absolute;
+    bottom: 14px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: linear-gradient(135deg, var(--orange) 0%, #ff6a00 100%);
+    color: #2b1200;
+    border: none;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: bold;
+    padding: 13px 26px;
+    box-shadow: 0 4px 18px rgba(255,120,0,.5);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #routeBtn:active { transform: translateX(-50%) scale(.96); }
+  #locateBtn {
+    position: absolute;
+    bottom: 14px; right: 12px;
+    z-index: 1000;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid #4a2a78;
+    background: var(--card);
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  /* ---------- bottom sheet ---------- */
+  #sheet {
+    flex: 0 0 auto;
+    background: #140829;
+    border-top: 2px solid #3d1f66;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    z-index: 1100;
+  }
+  #sheetTitle {
+    font-size: 13px;
+    color: var(--muted);
+    padding: 0 14px 6px;
+  }
+  #cards {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 2px 14px 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  #cards::-webkit-scrollbar { display: none; }
+  .card {
+    scroll-snap-align: center;
+    flex: 0 0 240px;
+    background: var(--card);
+    border: 2px solid #4a2a78;
+    border-radius: 16px;
+    padding: 10px 12px;
+    cursor: pointer;
+    position: relative;
+  }
+  .card.open { border-color: var(--orange); }
+  .card.visited { opacity: .55; }
+  .card .top { display: flex; align-items: center; gap: 7px; }
+  .card .emoji { font-size: 26px; }
+  .card .addr { font-size: 15px; font-weight: bold; line-height: 1.25; }
+  .card .host { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .card .status { font-size: 12.5px; margin-top: 6px; font-weight: bold; }
+  .status.s-open { color: var(--green); }
+  .status.s-soon { color: var(--purple); }
+  .status.s-closing { color: var(--orange2); }
+  .status.s-closed { color: var(--red); }
+  .card .ordtag {
+    position: absolute; top: -9px; left: 10px;
+    background: var(--orange); color: #2b1200;
+    border-radius: 999px; font-size: 12px; font-weight: bold;
+    padding: 1px 9px; border: 2px solid #140829;
+  }
+
+  /* ---------- detail modal ---------- */
+  #overlay {
+    position: fixed; inset: 0;
+    background: rgba(8,2,20,.72);
+    z-index: 2000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  #overlay.show { display: flex; }
+  #detail {
+    background: linear-gradient(180deg, var(--card2) 0%, var(--card) 100%);
+    border-radius: 24px 24px 0 0;
+    border: 2px solid #5a3590;
+    border-bottom: none;
+    width: 100%;
+    max-width: 520px;
+    padding: 18px 18px max(20px, env(safe-area-inset-bottom));
+    animation: up .22s ease-out;
+  }
+  @keyframes up { from { transform: translateY(60px); opacity: 0;} to { transform: none; opacity: 1;} }
+  #dClose {
+    position: absolute; left: 16px; margin-top: -4px;
+    background: #41246b; border: none; color: var(--text);
+    width: 34px; height: 34px; border-radius: 50%;
+    font-size: 17px; cursor: pointer;
+  }
+  #dEmoji { font-size: 44px; text-align: center; }
+  #dAddr { font-size: 21px; font-weight: bold; text-align: center; margin-top: 2px; }
+  #dHost { text-align: center; color: var(--muted); font-size: 14px; margin-top: 3px; }
+  #dStatus { text-align: center; font-size: 15px; font-weight: bold; margin-top: 8px; }
+  #dGrid {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center;
+    margin-top: 13px;
+  }
+  .dg {
+    background: #1d0e38;
+    border: 1.5px solid #4a2a78;
+    border-radius: 14px;
+    padding: 8px 14px;
+    text-align: center;
+    min-width: 86px;
+  }
+  .dg .k { font-size: 11.5px; color: var(--muted); }
+  .dg .v { font-size: 20px; font-weight: bold; color: var(--orange2); margin-top: 2px; direction: ltr; }
+  .dg.code { border-color: var(--orange); background: #2b1200; }
+  .dg.code .v { color: #ffd27a; letter-spacing: 1px; }
+  #dNote {
+    margin-top: 11px; text-align: center;
+    font-size: 14.5px; color: var(--text);
+    background: #1d0e38; border-radius: 12px; padding: 9px 12px;
+  }
+  #dBtns { display: flex; gap: 10px; margin-top: 15px; }
+  #dBtns button, #dBtns a {
+    flex: 1;
+    border: none; border-radius: 15px;
+    font-family: inherit; font-size: 16.5px; font-weight: bold;
+    padding: 14px 6px;
+    cursor: pointer; text-align: center; text-decoration: none;
+  }
+  #dNav { background: linear-gradient(135deg, #39e75f, #19b741); color: #04260d; }
+  #dVisit { background: linear-gradient(135deg, var(--orange), #ff6a00); color: #2b1200; }
+  #dVisit.undo { background: #41246b; color: var(--text); }
+
+  /* candy burst */
+  .candy-fly {
+    position: fixed; z-index: 3000;
+    font-size: 30px; pointer-events: none;
+    animation: fly 1s ease-out forwards;
+  }
+  @keyframes fly {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), -130px) scale(.4) rotate(220deg); opacity: 0; }
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: var(--card2); color: var(--text);
+    border-radius: 14px; border: 1.5px solid #5a3590;
+    font-family: 'Varela Round', sans-serif;
+  }
+  .leaflet-popup-tip { background: var(--card2); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎃 ליל כל הקדושים בשכונת למד 👻</h1>
+  <a id="adminLink" href="admin.html" title="ניהול">⚙️</a>
+  <div class="statsbar">
+    <div class="chip">🕐 <b id="clock">--:--</b></div>
+    <div class="chip">🏠 פתוחים: <b id="openCount">0</b></div>
+    <div class="chip" id="candyChip">🍬 <b id="candyCount">0</b></div>
+  </div>
+</header>
+
+<div id="mapwrap">
+  <div id="map"></div>
+  <button id="routeBtn">🧭 בנו לי מסלול קסם!</button>
+  <button id="locateBtn" title="איפה אני?">📍</button>
+</div>
+
+<div id="sheet">
+  <div id="sheetTitle">הבתים במסלול — החליקו ולחצו לפרטים 🍭</div>
+  <div id="cards"></div>
+</div>
+
+<div id="overlay">
+  <div id="detail">
+    <button id="dClose">✕</button>
+    <div id="dEmoji">🎃</div>
+    <div id="dAddr"></div>
+    <div id="dHost"></div>
+    <div id="dStatus"></div>
+    <div id="dGrid"></div>
+    <div id="dNote"></div>
+    <div id="dBtns">
+      <a id="dNav" target="_blank" rel="noopener">🧭 נווטו אליי!</a>
+      <button id="dVisit">🍬 קיבלנו ממתק!</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ---------------- data ----------------
+// open/close are minutes-from-midnight
+const T = s => { const [h,m] = s.split(':').map(Number); return h*60+m; };
+
+let HOUSES = [];
+async function loadHouses() {
+  let data;
+  try {
+    data = await (await fetch('/api/halloween/houses', { cache: 'no-store' })).json();
+  } catch (e) {
+    data = await (await fetch('houses.json')).json();   // offline fallback
+  }
+  HOUSES = data.map(h => ({ ...h, open: T(h.open), close: T(h.close) }));
+  refresh();
+}
+
+// ---------------- state ----------------
+let visited = new Set(JSON.parse(localStorage.getItem('visited') || '[]'));
+let userPos = null;        // {lat,lng}
+let routeOrder = null;     // array of house ids
+let markers = {};
+let routeLine = null;
+let meMarker = null;
+let currentHouse = null;
+
+// fake clock for testing: add ?t=18:45 to URL
+const urlT = new URLSearchParams(location.search).get('t');
+function nowMin() {
+  if (urlT) return T(urlT);
+  const d = new Date();
+  return d.getHours()*60 + d.getMinutes();
+}
+const fmt = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+
+function statusOf(h) {
+  const n = nowMin();
+  if (n < h.open)  return { key:'soon',    cls:'s-soon',    emoji:'🔮', label:'נפתח ב־' + fmt(h.open) };
+  if (n >= h.close) return { key:'closed', cls:'s-closed',  emoji:'🦇', label:'סגור להיום' };
+  if (h.close - n <= 20) return { key:'closing', cls:'s-closing', emoji:'⏳', label:'נסגר בקרוב! עד ' + fmt(h.close) };
+  return { key:'open', cls:'s-open', emoji:'🍬', label:'פתוח עכשיו! עד ' + fmt(h.close) };
+}
+
+// ---------------- map ----------------
+const map = L.map('map', { zoomControl:false }).setView([32.1082, 34.7888], 16);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'&copy; OpenStreetMap', maxZoom:19, className:'dark-tiles'
+}).addTo(map);
+
+function markerHtml(h) {
+  const st = statusOf(h);
+  const isV = visited.has(h.id);
+  const emoji = isV ? '🏠' : (st.key==='closed' ? '🌑' : st.key==='soon' ? '🔮' : '🎃');
+  const ord = routeOrder ? routeOrder.indexOf(h.id) : -1;
+  return `<div class="hm ${st.key==='closed'?'closed':st.key==='soon'?'soon':'open'}">${emoji}` +
+    (ord >= 0 && !isV && st.key!=='closed' ? `<span class="ord">${ord+1}</span>` : '') +
+    (isV ? `<span class="done">✅</span>` : '') + `</div>`;
+}
+
+function renderMarkers() {
+  HOUSES.forEach(h => {
+    const icon = L.divIcon({ className:'house-marker', html:markerHtml(h), iconSize:[44,44], iconAnchor:[22,22] });
+    if (markers[h.id]) markers[h.id].setIcon(icon);
+    else {
+      markers[h.id] = L.marker([h.lat, h.lng], { icon }).addTo(map).on('click', () => openDetail(h));
+    }
+  });
+}
+
+// ---------------- cards ----------------
+function sortedHouses() {
+  const n = nowMin();
+  const arr = [...HOUSES];
+  const rank = h => {
+    const st = statusOf(h).key;
+    if (visited.has(h.id)) return 4;
+    if (st==='closed') return 3;
+    if (st==='soon') return 2;
+    return st==='closing' ? 0 : 1;
+  };
+  arr.sort((a,b) => {
+    if (routeOrder) {
+      const ia = routeOrder.indexOf(a.id), ib = routeOrder.indexOf(b.id);
+      const va = visited.has(a.id)||statusOf(a).key==='closed';
+      const vb = visited.has(b.id)||statusOf(b).key==='closed';
+      if (va!==vb) return va?1:-1;
+      if (ia>=0 && ib>=0) return ia-ib;
+      if (ia>=0) return -1;
+      if (ib>=0) return 1;
+    }
+    const r = rank(a)-rank(b);
+    if (r) return r;
+    return (a.close-n) - (b.close-n);
+  });
+  return arr;
+}
+
+function renderCards() {
+  const wrap = document.getElementById('cards');
+  wrap.innerHTML = '';
+  sortedHouses().forEach(h => {
+    const st = statusOf(h);
+    const isV = visited.has(h.id);
+    const d = document.createElement('div');
+    d.className = 'card' + (st.key==='open'||st.key==='closing' ? ' open':'') + (isV?' visited':'');
+    const ord = routeOrder ? routeOrder.indexOf(h.id) : -1;
+    d.innerHTML =
+      (ord>=0 && !isV && st.key!=='closed' ? `<span class="ordtag">תחנה ${ord+1}</span>` : '') +
+      `<div class="top"><span class="emoji">${isV?'✅':st.key==='closed'?'🌑':st.key==='soon'?'🔮':'🎃'}</span>
+        <div><div class="addr">${h.addr}</div><div class="host">${h.host||'הפתעה!'}</div></div></div>
+       <div class="status ${st.cls}">${st.emoji} ${isV ? 'כבר קיבלתם כאן ממתק!' : st.label}</div>`;
+    d.onclick = () => { openDetail(h); map.flyTo([h.lat,h.lng], 17.5, {duration:.6}); };
+    wrap.appendChild(d);
+  });
+  const openN = HOUSES.filter(h => !visited.has(h.id) && ['open','closing'].includes(statusOf(h).key)).length;
+  document.getElementById('openCount').textContent = openN;
+}
+
+// ---------------- detail ----------------
+function openDetail(h) {
+  currentHouse = h;
+  const st = statusOf(h);
+  const isV = visited.has(h.id);
+  document.getElementById('dEmoji').textContent = isV ? '✅' : st.key==='closed' ? '🌑' : st.key==='soon' ? '🔮' : '🎃';
+  document.getElementById('dAddr').textContent = h.addr;
+  document.getElementById('dHost').textContent = h.host ? 'אצל ' + h.host : '';
+  const stEl = document.getElementById('dStatus');
+  stEl.innerHTML = st.emoji + ' ' + st.label + ` (<bdi dir="ltr">${fmt(h.open)}–${fmt(h.close)}</bdi>)`;
+  stEl.className = st.cls;
+
+  const g = document.getElementById('dGrid');
+  g.innerHTML = '';
+  const add = (k,v,cls='') => { g.insertAdjacentHTML('beforeend', `<div class="dg ${cls}"><div class="k">${k}</div><div class="v">${v}</div></div>`); };
+  if (h.floor) add('קומה 🏢', h.floor);
+  if (h.apt)   add('דירה 🚪', h.apt);
+  if (h.code)  add('קוד כניסה 🔑', h.code, 'code');
+  const note = document.getElementById('dNote');
+  note.style.display = h.note ? '' : 'none';
+  note.textContent = h.note ? '💡 ' + h.note : '';
+
+  document.getElementById('dNav').href =
+    `https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=walking`;
+  const vb = document.getElementById('dVisit');
+  vb.textContent = isV ? '↩️ אופס, עוד לא היינו' : '🍬 קיבלנו ממתק!';
+  vb.className = isV ? 'undo' : '';
+  document.getElementById('overlay').classList.add('show');
+}
+
+document.getElementById('dClose').onclick = () => document.getElementById('overlay').classList.remove('show');
+document.getElementById('overlay').onclick = e => { if (e.target.id==='overlay') e.target.classList.remove('show'); };
+
+document.getElementById('dVisit').onclick = e => {
+  if (!currentHouse) return;
+  if (visited.has(currentHouse.id)) visited.delete(currentHouse.id);
+  else {
+    visited.add(currentHouse.id);
+    candyBurst(e.clientX || innerWidth/2, e.clientY || innerHeight/2);
+  }
+  localStorage.setItem('visited', JSON.stringify([...visited]));
+  document.getElementById('overlay').classList.remove('show');
+  refresh();
+};
+
+function candyBurst(x, y) {
+  const sweets = ['🍬','🍭','🍫','🧁','🍩'];
+  for (let i=0;i<7;i++) {
+    const s = document.createElement('div');
+    s.className = 'candy-fly';
+    s.textContent = sweets[i % sweets.length];
+    s.style.left = x+'px'; s.style.top = y+'px';
+    s.style.setProperty('--dx', (Math.random()*160-80)+'px');
+    s.style.animationDelay = (i*0.05)+'s';
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(), 1400);
+  }
+}
+
+// ---------------- route ----------------
+const R = 6371000;
+function dist(a, b) {
+  const dLat=(b.lat-a.lat)*Math.PI/180, dLng=(b.lng-a.lng)*Math.PI/180;
+  const q = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(q));
+}
+const WALK = 65;          // meters per minute (kids pace)
+const STOP_MIN = 4;       // minutes spent at each house
+
+function buildRoute(start) {
+  // greedy nearest-neighbor with time windows + urgency for houses closing soon
+  let t = nowMin();
+  let pos = start;
+  const todo = HOUSES.filter(h => !visited.has(h.id) && nowMin() < h.close);
+  const order = [];
+  while (todo.length) {
+    let best = null, bestScore = Infinity;
+    for (const h of todo) {
+      const walkMin = dist(pos, h) * 1.3 / WALK;
+      const arrive = t + walkMin;
+      if (arrive >= h.close) continue;               // would arrive after closing
+      const wait = Math.max(0, h.open - arrive);     // not open yet when arriving
+      const slack = h.close - arrive;                // minutes left before it closes
+      const urgency = Math.max(0, (60 - slack)) * 0.35;
+      const score = walkMin + wait*0.7 - urgency;
+      if (score < bestScore) { bestScore = score; best = h; }
+    }
+    if (!best) break;
+    const walkMin = dist(pos, best) * 1.3 / WALK;
+    t += walkMin + Math.max(0, best.open - (t + walkMin)) + STOP_MIN;
+    pos = best;
+    order.push(best.id);
+    todo.splice(todo.indexOf(best), 1);
+  }
+  return order;
+}
+
+function drawRoute(start) {
+  routeOrder = buildRoute(start);
+  if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
+  const pts = [[start.lat, start.lng], ...routeOrder.map(id => { const h = HOUSES.find(x=>x.id===id); return [h.lat, h.lng]; })];
+  if (pts.length > 1) {
+    routeLine = L.polyline(pts, { color:'#ff8c1a', weight:4, dashArray:'2 10', opacity:.85, lineCap:'round' }).addTo(map);
+    map.fitBounds(routeLine.getBounds().pad(0.12));
+  }
+  refresh();
+  const btn = document.getElementById('routeBtn');
+  btn.textContent = routeOrder.length ? `✨ המסלול מוכן! ${routeOrder.length} תחנות` : '🦇 אין כרגע בתים פתוחים';
+  setTimeout(()=>{ btn.textContent = '🧭 חשבו לי מסלול מחדש'; }, 3500);
+}
+
+const CENTER = { lat:32.1082, lng:34.7888 };
+function locate(then) {
+  if (!navigator.geolocation) { then(CENTER); return; }
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      userPos = { lat:p.coords.latitude, lng:p.coords.longitude };
+      // if user is far from the neighborhood (>3km) start from center
+      const startAt = dist(userPos, CENTER) > 3000 ? CENTER : userPos;
+      if (meMarker) meMarker.setLatLng([userPos.lat, userPos.lng]);
+      else meMarker = L.marker([userPos.lat, userPos.lng], {
+        icon: L.divIcon({ className:'me-marker', html:'<div class="me-dot">🧙</div>', iconSize:[22,22], iconAnchor:[11,11] })
+      }).addTo(map).bindPopup('אתם כאן! 🧙✨');
+      then(startAt);
+    },
+    () => then(CENTER),
+    { enableHighAccuracy:true, timeout:7000, maximumAge:30000 }
+  );
+}
+
+document.getElementById('routeBtn').onclick = () => {
+  document.getElementById('routeBtn').textContent = '🔮 מערבב קסמים...';
+  locate(start => drawRoute(start));
+};
+document.getElementById('locateBtn').onclick = () => locate(s => {
+  if (userPos) map.flyTo([userPos.lat, userPos.lng], 17, {duration:.7});
+});
+
+// ---------------- refresh loop ----------------
+function refresh() {
+  document.getElementById('clock').textContent = fmt(nowMin());
+  document.getElementById('candyCount').textContent = visited.size;
+  renderMarkers();
+  renderCards();
+}
+loadHouses();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>

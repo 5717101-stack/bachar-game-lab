@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔧 ניהול — ליל כל הקדושים</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#1a0a2e; --card:#2a1545; --card2:#35195a; --orange:#ff8c1a; --orange2:#ffb347;
+    --green:#39e75f; --red:#ff5c5c; --text:#fff3e0; --muted:#b9a5d0; --border:#4a2a78;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Varela Round',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+  /* login */
+  #gate { position:fixed; inset:0; background:var(--bg); z-index:5000; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+  #gate .pump { font-size:60px; }
+  #gate input {
+    font-family:inherit; font-size:26px; text-align:center; letter-spacing:10px; direction:ltr;
+    background:var(--card); color:var(--text); border:2px solid var(--border); border-radius:14px;
+    padding:12px; width:220px; outline:none;
+  }
+  #gate input.err { border-color:var(--red); animation:shake .3s; }
+  @keyframes shake { 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  #gate button { font-family:inherit; font-size:17px; font-weight:bold; background:var(--orange); color:#2b1200; border:none; border-radius:12px; padding:11px 34px; cursor:pointer; }
+
+  /* topbar */
+  #topbar {
+    position:sticky; top:0; z-index:1000;
+    background:#120627; border-bottom:2px solid #3d1f66;
+    padding:10px 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  #topbar h1 { font-size:17px; flex:1; min-width:180px; }
+  .btn {
+    font-family:inherit; font-weight:bold; border:none; border-radius:11px; cursor:pointer;
+    padding:9px 16px; font-size:14.5px;
+  }
+  .btn-save { background:linear-gradient(135deg,var(--green),#19b741); color:#04260d; }
+  .btn-add { background:var(--card2); color:var(--text); border:1.5px solid var(--border); }
+  .btn-back { background:none; color:var(--muted); border:1.5px solid var(--border); text-decoration:none; padding:8px 14px; border-radius:11px; font-size:14px; }
+  #saveMsg { font-size:13px; width:100%; }
+  #saveMsg.ok { color:var(--green); } #saveMsg.err { color:var(--red); }
+
+  #wrap { max-width:720px; margin:0 auto; padding:14px 12px 80px; }
+
+  .house {
+    background:var(--card); border:2px solid var(--border); border-radius:16px;
+    padding:12px; margin-bottom:14px;
+  }
+  .house.geo-ok { border-color:var(--green); }
+  .house .head { display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .house .head .ttl { flex:1; font-weight:bold; font-size:16px; }
+  .house .head .hours { color:var(--muted); font-size:13px; direction:ltr; }
+  .house .body { display:none; margin-top:12px; }
+  .house.openEd .body { display:block; }
+
+  .frow { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+  .f { flex:1; min-width:100px; }
+  .f label { display:block; font-size:11.5px; color:var(--muted); margin-bottom:3px; }
+  .f input, .f textarea {
+    width:100%; font-family:inherit; font-size:15px;
+    background:#1d0e38; color:var(--text); border:1.5px solid var(--border); border-radius:10px;
+    padding:8px 10px; outline:none;
+  }
+  .f input:focus { border-color:var(--orange); }
+  .f input[type=time] { direction:ltr; }
+  .f.small { flex:0 0 90px; }
+
+  .addr-row { display:flex; gap:8px; align-items:flex-end; }
+  .addr-row .f { flex:1; }
+  .btn-geo { background:linear-gradient(135deg,#4f9cf7,#2c6fd6); color:#fff; padding:9px 13px; font-size:14px; white-space:nowrap; }
+  .btn-geo:disabled { opacity:.5; }
+  .geo-status { font-size:12.5px; margin-top:4px; min-height:16px; }
+  .geo-status.ok { color:var(--green); } .geo-status.err { color:var(--red); }
+
+  .minimap { height:190px; border-radius:12px; margin-top:8px; border:1.5px solid var(--border); overflow:hidden; }
+  .map-hint { font-size:11.5px; color:var(--muted); margin-top:4px; }
+
+  .house .foot { display:flex; justify-content:flex-end; margin-top:10px; }
+  .btn-del { background:none; border:1.5px solid #6b2a3a; color:var(--red); font-size:13px; padding:7px 13px; }
+
+  .leaflet-container { font-family:inherit; background:#0d0518; }
+  .dark-tiles { filter:invert(1) hue-rotate(200deg) brightness(.75) contrast(.95) saturate(.65); }
+  .pin { background:none; border:none; font-size:30px; filter:drop-shadow(0 0 7px rgba(255,140,26,.9)); }
+
+  #fab {
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:1500;
+    background:linear-gradient(135deg,var(--green),#19b741); color:#04260d;
+    font-family:inherit; font-size:17px; font-weight:bold; border:none; border-radius:999px;
+    padding:14px 34px; box-shadow:0 4px 20px rgba(25,183,65,.45); cursor:pointer;
+  }
+  #fab:disabled { opacity:.6; }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="pump">🎃🔐</div>
+  <div>סיסמת ניהול</div>
+  <input id="pw" type="password" inputmode="numeric" maxlength="8" autocomplete="off">
+  <button onclick="tryLogin()">כניסה</button>
+</div>
+
+<div id="topbar" style="display:none">
+  <h1>🔧 ניהול בתים</h1>
+  <button class="btn btn-add" onclick="addHouse()">➕ בית חדש</button>
+  <a class="btn-back" href="./">🎃 חזרה למפה</a>
+  <div id="saveMsg"></div>
+</div>
+
+<div id="wrap" style="display:none"></div>
+<button id="fab" style="display:none" onclick="saveAll()">💾 שמור הכל</button>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let PASS = sessionStorage.getItem('hw-admin-pass') || '';
+let houses = [];
+const maps = {};   // id -> {map, marker}
+
+/* ---------- login ---------- */
+async function tryLogin() {
+  const v = document.getElementById('pw').value.trim();
+  const r = await fetch('/api/halloween/auth', { headers: { 'x-admin-pass': v } });
+  if (r.status === 401) {
+    const inp = document.getElementById('pw');
+    inp.classList.add('err'); inp.value = '';
+    setTimeout(() => inp.classList.remove('err'), 400);
+    return;
+  }
+  PASS = v;
+  sessionStorage.setItem('hw-admin-pass', v);
+  enter();
+}
+document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+
+async function enter() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('topbar').style.display = '';
+  document.getElementById('wrap').style.display = '';
+  document.getElementById('fab').style.display = '';
+  houses = await (await fetch('/api/halloween/houses', { cache: 'no-store' })).json();
+  renderAll();
+}
+
+/* ---------- render ---------- */
+const FIELDS = [
+  ['host',  'מארח/ת 👩', 'text'],
+  ['open',  'משעה 🕐', 'time'],
+  ['close', 'עד שעה 🕗', 'time'],
+  ['floor', 'קומה 🏢', 'text'],
+  ['apt',   'דירה 🚪', 'text'],
+  ['code',  'קוד כניסה 🔑', 'text'],
+];
+
+function renderAll() {
+  const wrap = document.getElementById('wrap');
+  wrap.innerHTML = '';
+  houses.forEach((h, i) => wrap.appendChild(houseCard(h, i)));
+}
+
+function houseCard(h, i) {
+  const d = document.createElement('div');
+  d.className = 'house';
+  d.id = 'house-' + i;
+  d.innerHTML = `
+    <div class="head" onclick="toggle(${i})">
+      <span>🎃</span>
+      <span class="ttl">${esc(h.addr) || 'בית חדש'}</span>
+      <span class="hours">${esc(h.open)}–${esc(h.close)}</span>
+      <span>▾</span>
+    </div>
+    <div class="body">
+      <div class="addr-row">
+        <div class="f">
+          <label>כתובת 🏠</label>
+          <input data-f="addr" data-i="${i}" value="${esc(h.addr || '')}">
+        </div>
+        <button class="btn btn-geo" onclick="geocode(${i})" id="geo-${i}">📍 אתר במפה</button>
+      </div>
+      <div class="geo-status" id="geost-${i}"></div>
+      <div class="frow">
+        ${FIELDS.map(([k, lbl, typ]) => `
+          <div class="f ${['open','close','floor','apt'].includes(k) ? 'small' : ''}">
+            <label>${lbl}</label>
+            <input type="${typ}" data-f="${k}" data-i="${i}" value="${esc(h[k] || '')}">
+          </div>`).join('')}
+      </div>
+      <div class="frow">
+        <div class="f">
+          <label>הערה 💡 (לובי / גינה / בניין...)</label>
+          <input data-f="note" data-i="${i}" value="${esc(h.note || '')}">
+        </div>
+      </div>
+      <div class="minimap" id="map-${i}"></div>
+      <div class="map-hint">אפשר לגרור את הסיכה לכיוון מדויק 🤏</div>
+      <div class="foot">
+        <button class="btn btn-del" onclick="delHouse(${i})">🗑️ מחק בית</button>
+      </div>
+    </div>`;
+  d.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const { f, i } = inp.dataset;
+      houses[i][f] = inp.value;
+      if (f === 'addr') {
+        d.querySelector('.ttl').textContent = inp.value || 'בית חדש';
+        houses[i]._addrDirty = true;    // geocode before save
+        setGeoStatus(i, 'הכתובת שונתה — לחצו "📍 אתר במפה" או שמרו ונאתר אוטומטית', '');
+      }
+      if (f === 'open' || f === 'close')
+        d.querySelector('.hours').textContent = `${houses[i].open}–${houses[i].close}`;
+    });
+  });
+  return d;
+}
+
+function toggle(i) {
+  const d = document.getElementById('house-' + i);
+  d.classList.toggle('openEd');
+  if (d.classList.contains('openEd') && !maps[i]) initMiniMap(i);
+}
+
+function initMiniMap(i) {
+  const h = houses[i];
+  const m = L.map('map-' + i, { zoomControl: false, attributionControl: false })
+    .setView([h.lat || 32.1082, h.lng || 34.7888], 17);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'dark-tiles' }).addTo(m);
+  const mk = L.marker([h.lat || 32.1082, h.lng || 34.7888], {
+    draggable: true,
+    icon: L.divIcon({ className: 'pin', html: '🎃', iconSize: [30, 30], iconAnchor: [15, 15] }),
+  }).addTo(m);
+  mk.on('dragend', () => {
+    const p = mk.getLatLng();
+    houses[i].lat = +p.lat.toFixed(7);
+    houses[i].lng = +p.lng.toFixed(7);
+    delete houses[i]._addrDirty;
+    setGeoStatus(i, 'מיקום עודכן ידנית ✓', 'ok');
+  });
+  maps[i] = { map: m, marker: mk };
+  setTimeout(() => m.invalidateSize(), 150);
+}
+
+/* ---------- geocode ---------- */
+async function geocode(i) {
+  const h = houses[i];
+  if (!h.addr?.trim()) return setGeoStatus(i, 'כתבו כתובת קודם', 'err');
+  const btn = document.getElementById('geo-' + i);
+  btn.disabled = true;
+  setGeoStatus(i, '🔮 מאתר בגוגל...', '');
+  try {
+    const r = await fetch('/api/halloween/geocode?q=' + encodeURIComponent(h.addr), { headers: { 'x-admin-pass': PASS } });
+    const j = await r.json();
+    if (!r.ok) return setGeoStatus(i, '❌ ' + (j.error || 'שגיאה'), 'err');
+    h.lat = j.lat; h.lng = j.lng;
+    delete h._addrDirty;
+    if (maps[i]) { maps[i].marker.setLatLng([j.lat, j.lng]); maps[i].map.setView([j.lat, j.lng], 17); }
+    setGeoStatus(i, `✅ אותר (${j.source === 'google' ? 'Google' : 'OSM'}): ${j.formatted}`, 'ok');
+    document.getElementById('house-' + i).classList.add('geo-ok');
+  } finally { btn.disabled = false; }
+}
+
+function setGeoStatus(i, msg, cls) {
+  const el = document.getElementById('geost-' + i);
+  if (el) { el.textContent = msg; el.className = 'geo-status ' + cls; }
+}
+
+/* ---------- add / delete / save ---------- */
+function addHouse() {
+  houses.unshift({
+    id: 'h' + Date.now(), host: '', addr: '', open: '17:30', close: '20:00',
+    lat: 32.1082, lng: 34.7888, _addrDirty: true,
+  });
+  renderAll();
+  toggle(0);
+}
+
+function delHouse(i) {
+  if (!confirm(`למחוק את "${houses[i].addr || 'הבית החדש'}"?`)) return;
+  houses.splice(i, 1);
+  Object.keys(maps).forEach(k => delete maps[k]);
+  renderAll();
+}
+
+async function saveAll() {
+  const fab = document.getElementById('fab');
+  const msg = document.getElementById('saveMsg');
+  fab.disabled = true; fab.textContent = '💾 שומר...';
+  msg.textContent = ''; msg.className = '';
+  try {
+    // auto-geocode any house whose address changed and wasn't located yet
+    for (let i = 0; i < houses.length; i++) {
+      if (houses[i]._addrDirty && houses[i].addr?.trim()) {
+        fab.textContent = `📍 מאתר: ${houses[i].addr}...`;
+        await geocode(i);
+        if (houses[i]._addrDirty) throw new Error(`לא הצלחתי לאתר את "${houses[i].addr}" — תקנו את הכתובת או גררו את הסיכה`);
+      }
+    }
+    const clean = houses.map(({ _addrDirty, ...h }) => h);
+    const r = await fetch('/api/halloween/houses', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-admin-pass': PASS },
+      body: JSON.stringify(clean),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'שגיאת שמירה');
+    msg.textContent = `✅ נשמר! ${j.count} בתים — המפה של הילדים מעודכנת`;
+    msg.className = 'ok';
+  } catch (e) {
+    msg.textContent = '❌ ' + e.message;
+    msg.className = 'err';
+  } finally {
+    fab.disabled = false; fab.textContent = '💾 שמור הכל';
+  }
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+/* auto-login if session already has the password */
+if (PASS) { document.getElementById('pw').value = PASS; tryLogin(); }
+</script>
+</body>
+</html>
